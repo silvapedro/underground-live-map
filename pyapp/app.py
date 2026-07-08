@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
+import subprocess
+import sys
 
 import logging
+import os
 import re
+
+from dotenv import load_dotenv
+
+# Load .env from the repo root (silently ignored if absent).
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
@@ -17,13 +27,64 @@ from pyapp.services.textual import group_rows_by_line, load_textual_rows
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
+FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
+
+# How often (seconds) to refresh london.json — matches TrainTimes.refresh=1 (60s) in the HTML.
+DATA_REFRESH_INTERVAL = 60
 
 # Directories at the repo root that are safe to expose as static assets.
 PUBLIC_STATIC_DIRS = ("lib", "js", "i", "data", "schematic", "skyfall", "london-buses", "tfwm")
 # Individual files at the repo root that are safe to expose.
 PUBLIC_STATIC_FILES = ("css.css", "lu-screenshot.png", "README")
 
-app = FastAPI(title="underground-live-map Python runtime")
+
+async def _fetch_data() -> None:
+    """Run bin/fetch.py in a subprocess and log the result."""
+    logger.info("Refreshing tube data from TfL API…")
+    env = os.environ.copy()
+    cmd = [sys.executable, str(FETCH_SCRIPT)]
+    app_key = env.get("TFL_APP_KEY", "")
+    if app_key:
+        cmd += ["--app-key", app_key]
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(REPO_ROOT),
+            env=env,
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            logger.warning("fetch.py exited %d: %s", proc.returncode, stderr.decode().strip())
+        else:
+            logger.info("Tube data refreshed successfully.")
+    except Exception:
+        logger.exception("Failed to run fetch.py")
+
+
+async def _refresh_loop() -> None:
+    """Background task: fetch on startup then every DATA_REFRESH_INTERVAL seconds."""
+    await _fetch_data()
+    while True:
+        await asyncio.sleep(DATA_REFRESH_INTERVAL)
+        await _fetch_data()
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    task = asyncio.create_task(_refresh_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="underground-live-map Python runtime", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 logger = logging.getLogger(__name__)
 _LINE_RE = re.compile(r"^[A-Za-z0-9,]{1,10}$")

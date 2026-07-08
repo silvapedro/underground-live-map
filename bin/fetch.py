@@ -20,6 +20,7 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug', action="store_true", help='true for noisy helpful execution, false or omitted for quiet.')
 parser.add_option('-s', '--stations', default='stations.json', help='JSON file to use for server station locations')
 parser.add_option('-o', '--output', default='../data', help='Output directory, relative to this script')
+parser.add_option('-k', '--app-key', default=os.environ.get('TFL_APP_KEY', ''), help='TfL API app key (or set TFL_APP_KEY env var)')
 
 (options, args) = parser.parse_args()
 debug_mode = options.debug
@@ -46,7 +47,8 @@ except Exception as ex:
 
 format = 'traintimes'
 
-api = 'https://api.tfl.gov.uk/Line/%s/Arrivals'
+_app_key_qs = ('?app_key=' + options.app_key) if options.app_key else ''
+api = 'https://api.tfl.gov.uk/Line/%s/Arrivals' + _app_key_qs
 
 print_debug( "Processing %s" % options.stations)
 station_locations = json.load(open(dir + options.stations))

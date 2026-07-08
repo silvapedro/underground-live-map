@@ -23,14 +23,17 @@ To install:
 * Create a local folder for the project and pull the repo.
 * Create a Python virtual environment with `uv venv .venv`.
 * Install dependencies with `uv pip install --python .venv\Scripts\python.exe -r requirements.txt`.
-* Generate tube data by running `python bin/fetch.py` (creates `data/london.json` and `data/london-text.json`).
+* Copy `.env.example` to `.env` and set `TFL_APP_KEY` to your TfL API key (register free at https://api-portal.tfl.gov.uk/).
+* Generate initial tube data by running `.venv\Scripts\python.exe bin/fetch.py` (creates `data/london.json` and `data/london-text.json`).
 * Optionally generate TfWM data by running `python tfwm/bin/fetch.py` (requires `tfwm/bin/config.py`).
 * Start the Python app with `.\.venv\Scripts\python.exe -m uvicorn pyapp.app:app --reload`.
-* Open `http://127.0.0.1:8000/index.html` for the map.
+* Open `http://127.0.0.1:8000/index.html` for the map. The app refreshes tube data every 60 seconds automatically.
 
 Runtime notes
 -------------
 * PHP is no longer required for this project.
+* The app auto-refreshes `data/london.json` every 60 seconds in the background using `bin/fetch.py`.
+  Set the `TFL_APP_KEY` environment variable before starting uvicorn for live data.
 * Python routes replace the old PHP endpoints:
   * `/text` for textual underground output.
   * `/data/bus?line=<route>` for London bus JSON payloads.

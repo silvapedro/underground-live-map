@@ -1,4 +1,5 @@
 *.pyc
+.env
 data/all-buses.json
 data/london.json
 data/london-text.json

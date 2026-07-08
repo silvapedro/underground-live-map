@@ -6,7 +6,7 @@ import logging
 import re
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -103,6 +103,13 @@ def accessible_view(request: Request, stop: str | None = None):
 # Restricted to an explicit allowlist so private/dev files (.venv, .git, plans/,
 # proposals/, research/, pyapp/, bin/, ...) are not exposed.
 INDEX_FILE = REPO_ROOT / "index.html"
+
+# The schematic view sets TrainTimes.url='/map/tube/schematic/', so trains.js
+# fetches data from '/map/tube/schematic/data/<name>'. Redirect those requests
+# to the canonical data location so both views share the same JSON source.
+@app.get("/map/tube/schematic/data/{name:path}", include_in_schema=False)
+def schematic_data_redirect(name: str):
+    return RedirectResponse(url=f"/map/tube/data/{name}", status_code=301)
 
 
 @app.get("/", include_in_schema=False)

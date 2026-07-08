@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Next Accessible District Line tube</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    table { margin-bottom: 1em; border-collapse: collapse; width: 100%; }
+    th, td { padding: 0.35rem 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
+    .non { color: #999; }
+    tr:nth-child(even) { background-color: #eef; }
+    ul { columns: 2; }
+    @media (max-width: 700px) { ul { columns: 1; } }
+  </style>
+</head>
+<body>
+  <h1>Next Accessible District Line tube{% if station_name %} - {{ station_name }}{% endif %}</h1>
+
+  {% for platform in platforms %}
+    <h2>{{ platform.name }}</h2>
+    <table>
+      <thead>
+        <tr><th>Due</th><th>Destination</th><th>ID</th><th>Location</th></tr>
+      </thead>
+      <tbody>
+        {% for row in platform.rows %}
+          <tr{% if row.is_non %} class="non"{% endif %}>
+            <td>{{ row.due }}</td>
+            <td>{{ row.destination }}</td>
+            <td>{{ row.id }}</td>
+            <td>{{ row.location }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+  <ul>
+    {% for code, name in stops %}
+      <li><a href="?stop={{ code }}">{{ name }}</a></li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

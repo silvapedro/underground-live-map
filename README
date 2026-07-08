@@ -21,11 +21,11 @@ Install
 -------
 To install:
 * Create a local folder for the project and pull the repo.
-* Create and activate a Python virtual environment.
-* Install dependencies with `pip install -r requirements.txt`.
+* Create a Python virtual environment with `uv venv .venv`.
+* Install dependencies with `uv pip install --python .venv\Scripts\python.exe -r requirements.txt`.
 * Generate tube data by running `python bin/fetch.py` (creates `data/london.json` and `data/london-text.json`).
 * Optionally generate TfWM data by running `python tfwm/bin/fetch.py` (requires `tfwm/bin/config.py`).
-* Start the Python app with `uvicorn pyapp.app:app --reload`.
+* Start the Python app with `.\.venv\Scripts\python.exe -m uvicorn pyapp.app:app --reload`.
 * Open `http://127.0.0.1:8000/index.html` for the map.
 
 Runtime notes

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import logging
+import re
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -25,10 +26,13 @@ PUBLIC_STATIC_FILES = ("css.css", "lu-screenshot.png", "README")
 app = FastAPI(title="underground-live-map Python runtime")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 logger = logging.getLogger(__name__)
+_LINE_RE = re.compile(r"^[A-Za-z0-9,]{1,10}$")
 
 
 @app.get("/text")
 @app.get("/text.php")
+@app.get("/map/tube/text")
+@app.get("/map/tube/text.php")
 def text_view(request: Request):
     rows = load_textual_rows(DATA_DIR / "london-text.json")
     groups = group_rows_by_line(rows)
@@ -43,12 +47,17 @@ def text_view(request: Request):
 
 @app.get("/data/bus")
 @app.get("/data/bus.php")
+@app.get("/map/tube/data/bus")
+@app.get("/map/tube/data/bus.php")
 def bus_view(line: str = Query(default="")):
-    if not line.strip():
+    route = line.strip()
+    if not route:
         raise HTTPException(status_code=400, detail="line query parameter is required")
+    if not _LINE_RE.fullmatch(route):
+        raise HTTPException(status_code=400, detail="line query parameter is invalid")
 
     try:
-        payload = fetch_bus_payload(line)
+        payload = fetch_bus_payload(route)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Bus upstream request failed; returning empty payload", exc_info=exc)
         payload = empty_bus_payload()
@@ -62,6 +71,8 @@ def bus_view(line: str = Query(default="")):
 
 @app.get("/accessible")
 @app.get("/accessible/index.php")
+@app.get("/map/tube/accessible")
+@app.get("/map/tube/accessible/index.php")
 def accessible_view(request: Request, stop: str | None = None):
     station_name = ""
     platforms = []

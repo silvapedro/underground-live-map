@@ -15,6 +15,14 @@ import sys
 
 import optparse
 
+# Load .env from the repo root (parent of this script's directory) if present.
+# override=True ensures .env values win even if the shell already has a stale value set.
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'), override=True)
+except Exception:
+    pass
+
 # Parse any command line arguments. Currently just --debug flag
 parser = optparse.OptionParser()
 parser.add_option('-d', '--debug', action="store_true", help='true for noisy helpful execution, false or omitted for quiet.')
@@ -76,7 +84,13 @@ for name, pts in station_locations.items():
                 station_locations[name]['circle'] = station_locations[name][old]
 
 lines = {
-    'london-overground': 'Overground',
+    # London Overground was split into 6 named lines in 2024.
+    'liberty': 'Liberty',
+    'lioness': 'Lioness',
+    'mildmay': 'Mildmay',
+    'suffragette': 'Suffragette',
+    'weaver': 'Weaver',
+    'windrush': 'Windrush',
     'tram': 'Tram',
     #'tfl-rail': 'TfL Rail',
     'dlr': 'DLR',
@@ -231,6 +245,10 @@ def parse_json(live):
             prediction['towards'], current_location, station_name, key, prediction['platformName'])
 
 
+_opener = urllib.request.build_opener()
+_opener.addheaders = [('User-Agent', 'Mozilla/5.0 (compatible; underground-live-map/1.0)')]
+urllib.request.install_opener(_opener)
+
 for key, line in lines.items():
     sub_id = 0
     sub_ids = {}
@@ -240,11 +258,14 @@ for key, line in lines.items():
         live = open(dir + 'cache/%s' % key).read()
         live = json.loads(live)
     except:
+        _skip = False
         while True:
             try:
                 live = urllib.request.urlopen(api % key, timeout=10).read()
             except urllib.error.URLError as e:
-                sys.exit(1)
+                print('Warning: network error fetching %s: %s' % (key, e), file=sys.stderr)
+                _skip = True
+                break
             except urllib.error.HTTPError as e:
                 if e.code == 429:
                     #print live['message']
@@ -255,12 +276,16 @@ for key, line in lines.items():
                         time.sleep(10)
                     continue
                 else:
-                    sys.exit(1)
+                    print('Warning: HTTP %d fetching %s, skipping' % (e.code, key), file=sys.stderr)
+                    _skip = True
+                    break
             fp = open(dir + 'cache/%s' % key, 'wb')
             fp.write(live)
             fp.close()
             live = json.loads(live)
             break
+        if _skip:
+            continue
 
     parse_json(live)
 
@@ -281,8 +306,8 @@ for key, ids in list(out.items()):
 #    out[key] = {id:arr for id,arr in ids.items() if (key, id) not in dupes}
 
 def lookup(line, name):
-    if name not in station_locations and options.stations == 'stations-schematic.json':
-        return (0,0)
+    if name not in station_locations:
+        return (0, 0)
     if line in station_locations[name]:
         return station_locations[name][line]
     #print_debug(name, line, station_locations[name])
@@ -388,7 +413,7 @@ if format=='traintimes':
     fp = open(dir + options.output + '/london.jsonN', 'w')
     fp.write(grr)
     fp.close()
-    os.rename(dir + options.output + '/london.jsonN', dir + options.output + '/london.json')
+    os.replace(dir + options.output + '/london.jsonN', dir + options.output + '/london.json')
 
     json.dump(outT, open(dir + options.output + '/london-text.json', 'w'))
 

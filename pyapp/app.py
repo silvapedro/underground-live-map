@@ -29,7 +29,7 @@ REPO_ROOT = BASE_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
 FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
 
-# How often (seconds) to refresh london.json — matches TrainTimes.refresh=1 (60s) in the HTML.
+# How often (seconds) to refresh london.json.
 DATA_REFRESH_INTERVAL = 60
 
 # Directories at the repo root that are safe to expose as static assets.
@@ -42,10 +42,12 @@ async def _fetch_data() -> None:
     """Run bin/fetch.py in a subprocess and log the result."""
     logger.info("Refreshing tube data from TfL API…")
     env = os.environ.copy()
-    cmd = [sys.executable, str(FETCH_SCRIPT)]
     app_key = env.get("TFL_APP_KEY", "")
+    cmd = [sys.executable, str(FETCH_SCRIPT)]
     if app_key:
         cmd += ["--app-key", app_key]
+    else:
+        logger.warning("TFL_APP_KEY not set — tube data fetch will likely return 403")
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 import logging
 import os
@@ -23,6 +24,7 @@ from fastapi.templating import Jinja2Templates
 from pyapp.services.accessible import STOPS, fetch_accessible_predictions
 from pyapp.services.bus import empty_bus_payload, fetch_bus_payload
 from pyapp.services.textual import group_rows_by_line, load_textual_rows
+from pyapp.services.tube_live import get_cached_positions, refresh_tube_live
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
@@ -31,6 +33,9 @@ FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
 
 # How often (seconds) to refresh london.json.
 DATA_REFRESH_INTERVAL = 60
+
+# How often (seconds) to refresh the canvas live-feed cache.
+TUBE_LIVE_REFRESH_INTERVAL = 30
 
 # Directories at the repo root that are safe to expose as static assets.
 PUBLIC_STATIC_DIRS = ("lib", "js", "i", "data", "schematic", "skyfall", "london-buses", "tfwm")
@@ -73,17 +78,29 @@ async def _refresh_loop() -> None:
         await _fetch_data()
 
 
+async def _tube_live_loop() -> None:
+    """Background task: keep the canvas live-feed cache warm every 30 s."""
+    app_key = os.environ.get("TFL_APP_KEY", "")
+    await refresh_tube_live(app_key)
+    while True:
+        await asyncio.sleep(TUBE_LIVE_REFRESH_INTERVAL)
+        app_key = os.environ.get("TFL_APP_KEY", "")
+        await refresh_tube_live(app_key)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     task = asyncio.create_task(_refresh_loop())
+    tube_task = asyncio.create_task(_tube_live_loop())
     try:
         yield
     finally:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+        for t in (task, tube_task):
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(title="underground-live-map Python runtime", lifespan=lifespan)
@@ -160,6 +177,35 @@ def accessible_view(request: Request, stop: str | None = None):
             "stops": STOPS,
         },
     )
+
+
+@app.get("/api/tube/trains", tags=["live-feed"])
+def tube_trains_api():
+    """
+    Return cached train positions for the TubeLiveMap canvas component.
+
+    Each train has: vehicleId, lineId, g (fractional station-index position),
+    dir (+1 forward / -1 reverse). The cache is refreshed every 30 s by a
+    background task; stale=true if the last refresh was more than 90 s ago.
+    """
+    data = get_cached_positions()
+    age = time.time() - data["updated_at"] if data["updated_at"] else float("inf")
+    response = JSONResponse(
+        {
+            "trains": data["trains"],
+            "updatedAt": data["updated_at"],
+            "stale": age > 90,
+            "error": data["error"],
+        }
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+# Serve the Vite production build when present.
+_DIST_DIR = REPO_ROOT / "dist"
+if _DIST_DIR.is_dir():
+    app.mount("/app", StaticFiles(directory=str(_DIST_DIR), html=True), name="vite-dist")
 
 
 # Serve repository static files so current HTML/CSS/JS assets remain usable.

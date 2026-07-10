@@ -8,3 +8,4 @@ bin/cache
 /tfwm/data
 /tfwm/bin/cache
 /tfwm/bin/config.py
+node_modules

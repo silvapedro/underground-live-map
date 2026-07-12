@@ -275,11 +275,7 @@ Update = {
             } else {
                 name = dropdown.value;
             }
-            if (name == 'all-buses.json') {
-		TrainTimes.refresh = 30;
-	    } else {
-		TrainTimes.refresh = 0.5;
-	    }
+            TrainTimes.refresh = 0.5;
             url = 'https://www.traintimes.org.uk' + TrainTimes.url + '#' + name;
             document.getElementById('permalink').href = url;
             window.location.hash = name;

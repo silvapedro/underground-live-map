@@ -264,6 +264,74 @@ def test_network_error_skips_the_line(tmp_path, monkeypatch):
     assert fetch.fetch_line("victoria", "http://x/%s", cache) is None
 
 
+def test_corrupt_cache_entry_is_discarded_and_refetched(tmp_path, monkeypatch):
+    """Regression: a cache file truncated by a killed process, or holding an HTML error
+    page, must be re-fetched. Raising JSONDecodeError here aborted the whole run -- and
+    since the bad file stays on disk, it poisoned every subsequent run too."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    corrupt = cache / "victoria"
+    corrupt.write_bytes(b"<html>502 Bad Gateway</html>")  # fresh mtime, so within TTL
+
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda *a, **kw: io.BytesIO(b'[{"ok": true}]'))
+
+    assert fetch.fetch_line("victoria", "http://x/%s", cache) == [{"ok": True}]
+    # The corrupt entry is replaced, so the next run is healthy too.
+    assert json.loads(corrupt.read_bytes()) == [{"ok": True}]
+
+
+def test_malformed_response_body_skips_the_line_and_is_not_cached(tmp_path, monkeypatch):
+    """Regression: a 200 carrying a maintenance page (not JSON) must skip just this line.
+    It must also never reach the cache, or it would break every later run."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda *a, **kw: io.BytesIO(b"<html>maintenance</html>"))
+
+    assert fetch.fetch_line("victoria", "http://x/%s", cache) is None
+    assert not (cache / "victoria").exists()
+
+
+def test_rate_limit_retries_are_capped(tmp_path, monkeypatch):
+    """Regression: the retry loop was unbounded. app.py awaits this subprocess, so a
+    persistent 429 froze the 60s refresh loop forever with no error and no new data."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    calls, slept = [], []
+
+    def always_429(*a, **kw):
+        calls.append(1)
+        raise _http_error(429, b"Try again in 1 second")
+
+    monkeypatch.setattr(urllib.request, "urlopen", always_429)
+    monkeypatch.setattr(time, "sleep", lambda s: slept.append(s))
+
+    assert fetch.fetch_line("victoria", "http://x/%s", cache) is None
+    assert len(calls) == fetch.MAX_FETCH_ATTEMPTS  # gives up rather than looping forever
+    assert len(slept) == fetch.MAX_FETCH_ATTEMPTS
+
+
+def test_rate_limit_delay_is_clamped(tmp_path, monkeypatch):
+    """A hostile or buggy Retry-After must not stall the run for hours."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    slept = []
+    responses = [_http_error(429, b"Try again in 86400 second"), io.BytesIO(b"[]")]
+
+    def fake_urlopen(*a, **kw):
+        item = responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", lambda s: slept.append(s))
+
+    assert fetch.fetch_line("victoria", "http://x/%s", cache) == []
+    assert slept == [fetch.MAX_RATE_LIMIT_DELAY]  # clamped from 86400
+
+
 # --------------------------------------------------------------------------
 # End-to-end: golden output from the frozen cache fixtures
 # --------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import re
+import ssl
 import sys
 import time
 import urllib.error
@@ -30,6 +31,11 @@ try:
 except ImportError:  # python-dotenv is optional; the env var still works without it.
     _load_dotenv = None
 
+try:
+    import truststore
+except ImportError:  # optional; only needed where TLS is intercepted (see build_opener)
+    truststore = None
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 # override=True so .env wins even if the shell already has a stale value set.
@@ -42,6 +48,12 @@ API_TEMPLATE = "https://api.tfl.gov.uk/Line/%s/Arrivals"
 USER_AGENT = "Mozilla/5.0 (compatible; underground-live-map/1.0)"
 HTTP_TIMEOUT = 10
 CACHE_TTL = 100  # seconds; a cache file younger than this is reused as-is.
+
+# A rate-limited line is retried, but only so many times: app.py awaits this script, so
+# retrying forever would freeze the 60s refresh loop with no error and no new data.
+MAX_FETCH_ATTEMPTS = 5
+RATE_LIMIT_FALLBACK_DELAY = 10  # used when TfL's 429 body has no "Try again in N second"
+MAX_RATE_LIMIT_DELAY = 60  # clamp, so a large value from TfL cannot stall the run
 
 # TfL line identifiers (URL path segments) -> display names.
 # London Overground was split into 6 named lines in 2024.
@@ -96,6 +108,26 @@ UNPLOTTABLE_LOCATIONS = (
 
 Coord = tuple[float, float]
 StationLocations = dict[str, dict[str, Coord]]
+
+
+def build_opener() -> urllib.request.OpenerDirector:
+    """Build the HTTP opener, verifying TLS against the OS trust store when possible.
+
+    Python verifies TLS with OpenSSL, which loads every CA from the Windows cert store
+    in one go and rejects the whole bundle if any single cert is malformed. That breaks
+    HTTPS entirely on machines whose store contains such a cert -- and machines running
+    TLS-intercepting antivirus (Avast, Zscaler, ...) also need the AV's private root,
+    which certifi does not ship. truststore sidesteps both by delegating verification to
+    the OS's native APIs. It is optional: without it we fall back to Python's default.
+    """
+    handlers = []
+    if truststore is not None:
+        handlers.append(urllib.request.HTTPSHandler(
+            context=truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ))
+    opener = urllib.request.build_opener(*handlers)
+    opener.addheaders = [("User-Agent", USER_AGENT)]
+    return opener
 
 
 def canon_station_name(s: str, line: str) -> str:
@@ -237,7 +269,9 @@ def lookup(stations: StationLocations, line: str, name: str) -> Coord:
 def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> list[dict] | None:
     """Return the raw predictions for one line, from cache if fresh, else over HTTP.
 
-    Returns None if the line should be skipped (network error or non-429 HTTP error).
+    Returns None if the line should be skipped. Every failure mode here is per-line: a
+    bad response, a corrupt cache entry or a rate limit must never abort the whole run,
+    because that would lose the other 19 lines too.
     """
     cache_file = cache_dir / key
 
@@ -245,25 +279,32 @@ def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> lis
         if time.time() - cache_file.stat().st_mtime <= ttl:
             log.debug("Using cached data for %s", key)
             return json.loads(cache_file.read_bytes())
-    except OSError:
-        pass  # No cache file, or it is unreadable; fall through to fetching.
+    # ValueError covers JSONDecodeError: a cache entry truncated by a killed process or
+    # a full disk must be re-fetched, not raised. Left uncaught it would poison every
+    # subsequent run too, since the bad file stays on disk.
+    except (OSError, ValueError) as exc:
+        if not isinstance(exc, FileNotFoundError):
+            log.warning("Discarding unusable cache entry for %s: %s", key, exc)
 
-    while True:
+    for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
         try:
             raw = urllib.request.urlopen(api % key, timeout=HTTP_TIMEOUT).read()
         # HTTPError MUST be caught before URLError: it is a subclass of it, so the
         # reverse order (as this script had previously) made the 429 retry unreachable.
         except urllib.error.HTTPError as exc:
             if exc.code == 429:
-                delay = 10
+                delay = RATE_LIMIT_FALLBACK_DELAY
                 try:
                     body = exc.read().decode("utf-8", "replace")
                     m = re.search(r"Try again in (\d+) second", body)
                     if m:
-                        delay = int(m.group(1))
+                        delay = min(int(m.group(1)), MAX_RATE_LIMIT_DELAY)
                 except Exception:  # noqa: BLE001 - body is best-effort only
                     pass
-                log.warning("Rate limited fetching %s; retrying in %ds", key, delay)
+                log.warning(
+                    "Rate limited fetching %s; retrying in %ds (attempt %d/%d)",
+                    key, delay, attempt, MAX_FETCH_ATTEMPTS,
+                )
                 time.sleep(delay)
                 continue
             log.warning("HTTP %d fetching %s, skipping", exc.code, key)
@@ -274,9 +315,23 @@ def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> lis
             log.warning("Network error fetching %s: %s", key, exc)
             return None
 
+        # Parse before caching, so a non-JSON body (a maintenance page served with a 200,
+        # a captive portal) is skipped rather than being written to the cache and
+        # crashing this run and every later one.
+        try:
+            predictions = json.loads(raw)
+        except ValueError as exc:
+            log.warning("Malformed JSON fetching %s, skipping: %s", key, exc)
+            return None
+
         cache_file.write_bytes(raw)
         log.debug("Fetched %s from the TfL API", key)
-        return json.loads(raw)
+        return predictions
+
+    # Rate limited on every attempt; give up on this line rather than blocking the
+    # refresh loop forever (app.py awaits this subprocess).
+    log.warning("Giving up on %s after %d rate-limited attempts", key, MAX_FETCH_ATTEMPTS)
+    return None
 
 
 class ParseState:
@@ -529,9 +584,9 @@ def main(argv: list[str] | None = None) -> int:
     if not options.app_key:
         log.warning("No TFL_APP_KEY set; the TfL API will heavily rate-limit anonymous requests")
 
-    opener = urllib.request.build_opener()
-    opener.addheaders = [("User-Agent", USER_AGENT)]
-    urllib.request.install_opener(opener)
+    urllib.request.install_opener(build_opener())
+    if truststore is None:
+        log.debug("truststore not installed; using Python's default TLS verification")
 
     log.info("Loading station locations from %s", options.stations)
     stations = load_station_locations(SCRIPT_DIR / options.stations)

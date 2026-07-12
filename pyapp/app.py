@@ -3,25 +3,22 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
-import subprocess
 import sys
 
 import logging
 import os
-import re
 
 from dotenv import load_dotenv
 
 # Load .env from the repo root (silently ignored if absent).
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pyapp.services.accessible import STOPS, fetch_accessible_predictions
-from pyapp.services.bus import empty_bus_payload, fetch_bus_payload
 from pyapp.services.textual import group_rows_by_line, load_textual_rows
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -33,7 +30,7 @@ FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
 DATA_REFRESH_INTERVAL = 60
 
 # Directories at the repo root that are safe to expose as static assets.
-PUBLIC_STATIC_DIRS = ("lib", "js", "i", "data", "schematic", "skyfall", "london-buses", "tfwm")
+PUBLIC_STATIC_DIRS = ("lib", "js", "i", "data", "schematic", "skyfall")
 # Individual files at the repo root that are safe to expose.
 PUBLIC_STATIC_FILES = ("css.css", "lu-screenshot.png", "README")
 
@@ -89,7 +86,6 @@ async def lifespan(application: FastAPI):
 app = FastAPI(title="underground-live-map Python runtime", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 logger = logging.getLogger(__name__)
-_LINE_RE = re.compile(r"^[A-Za-z0-9,]{1,10}$")
 
 
 @app.get("/text")
@@ -106,30 +102,6 @@ def text_view(request: Request):
             "groups": groups,
         },
     )
-
-
-@app.get("/data/bus")
-@app.get("/data/bus.php")
-@app.get("/map/tube/data/bus")
-@app.get("/map/tube/data/bus.php")
-def bus_view(line: str = Query(default="")):
-    route = line.strip()
-    if not route:
-        raise HTTPException(status_code=400, detail="line query parameter is required")
-    if not _LINE_RE.fullmatch(route):
-        raise HTTPException(status_code=400, detail="line query parameter is invalid")
-
-    try:
-        payload = fetch_bus_payload(route)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Bus upstream request failed; returning empty payload", exc_info=exc)
-        payload = empty_bus_payload()
-
-    response = JSONResponse(content=payload)
-    response.headers["Cache-Control"] = "max-age=30"
-    if not payload["trains"] and not payload["stations"]:
-        response.headers["X-Upstream-Status"] = "fallback-empty"
-    return response
 
 
 @app.get("/accessible")

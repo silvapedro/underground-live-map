@@ -1,420 +1,626 @@
-#!/usr/bin/python3
-""" Create the file /data/london.js from the sources files within the /data folder.
-The client side code uses london.js for its static source data, e.g. geography of stations. """
+#!/usr/bin/env python3
+"""Generate data/london.json and data/london-text.json from the TfL Arrivals API.
 
-from __future__ import division 
-from collections import OrderedDict
+The client-side code (js/trains.js) consumes london.json for live train positions
+and the static station/polyline geography. pyapp/app.py runs this script as a
+subprocess every 60 seconds.
+
+Usage:
+    python bin/fetch.py [--app-key KEY] [--debug]
+"""
+
+from __future__ import annotations
+
+import argparse
 import datetime
-import urllib.request
-import re
-import simplejson as json
-import time
+import json
+import logging
 import os
-import os.path
+import re
+import ssl
 import sys
+import time
+import urllib.error
+import urllib.request
+from collections import OrderedDict
+from pathlib import Path
+from typing import Any
 
-import optparse
-
-# Load .env from the repo root (parent of this script's directory) if present.
-# override=True ensures .env values win even if the shell already has a stale value set.
 try:
     from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'), override=True)
-except Exception:
-    pass
+except ImportError:  # python-dotenv is optional; the env var still works without it.
+    _load_dotenv = None
 
-# Parse any command line arguments. Currently just --debug flag
-parser = optparse.OptionParser()
-parser.add_option('-d', '--debug', action="store_true", help='true for noisy helpful execution, false or omitted for quiet.')
-parser.add_option('-s', '--stations', default='stations.json', help='JSON file to use for server station locations')
-parser.add_option('-o', '--output', default='../data', help='Output directory, relative to this script')
-parser.add_option('-k', '--app-key', default=os.environ.get('TFL_APP_KEY', ''), help='TfL API app key (or set TFL_APP_KEY env var)')
-
-(options, args) = parser.parse_args()
-debug_mode = options.debug
-
-""" Print the string only if we're in debug mode. """
-def print_debug(*out):
-    if debug_mode:
-        print(*out)
-        
-# get the directory containing this file, fetch.py, which is in the /bin directory within the project.
-dir = os.getcwd() + '/'
-dir = os.path.dirname(os.path.abspath(__file__) ) + '/'
-print_debug( 'Data generation tool for underground-live-map\nUsage: python fetch.py\n')
-print_debug( 'Creating and populating directories: \n%s and \n%s' % ( dir + 'cache', dir + options.output )) 
-# Now create the destination directories relative to the cwd.
 try:
-    os.mkdir(dir + 'cache')
-    os.mkdir(dir + options.output)
-except Exception as ex:
-    pass # ignore - probably exists already.
+    import truststore
+except ImportError:  # optional; only needed where TLS is intercepted (see build_opener)
+    truststore = None
 
-# If the above approach doesn't work for you, you could hard code dir like this:
-# dir = '/srv/traintimes.org.uk/public/htdocs/map/tube/bin/'
+SCRIPT_DIR = Path(__file__).resolve().parent
 
-format = 'traintimes'
+# override=True so .env wins even if the shell already has a stale value set.
+if _load_dotenv is not None:
+    _load_dotenv(SCRIPT_DIR.parent / ".env", override=True)
 
-_app_key_qs = ('?app_key=' + options.app_key) if options.app_key else ''
-api = 'https://api.tfl.gov.uk/Line/%s/Arrivals' + _app_key_qs
+log = logging.getLogger("fetch")
 
-print_debug( "Processing %s" % options.stations)
-station_locations = json.load(open(dir + options.stations))
-for name, pts in station_locations.items():
-    if isinstance(pts, str):
-        lng, lat = pts.split(',')
-        station_locations[name] = { '*': (float(lat), float(lng)) }
-    switch = {
-        'B': 'bakerloo',
-        'C': 'central',
-        'D': 'district',
-        'E': 'elizabeth',
-        'H': 'hammersmith-city',
-        'J': 'jubilee',
-        'M': 'metropolitan',
-        'N': 'northern',
-        'P': 'piccadilly',
-        'V': 'victoria',
-        'W': 'waterloo-city',
-    }
-    for old, new in switch.items():
-        if old in station_locations[name]:
-            station_locations[name][new] = station_locations[name][old]
-            if old == 'H':
-                station_locations[name]['circle'] = station_locations[name][old]
+API_TEMPLATE = "https://api.tfl.gov.uk/Line/%s/Arrivals"
+USER_AGENT = "Mozilla/5.0 (compatible; underground-live-map/1.0)"
+HTTP_TIMEOUT = 10
+CACHE_TTL = 100  # seconds; a cache file younger than this is reused as-is.
 
-lines = {
-    # London Overground was split into 6 named lines in 2024.
-    'liberty': 'Liberty',
-    'lioness': 'Lioness',
-    'mildmay': 'Mildmay',
-    'suffragette': 'Suffragette',
-    'weaver': 'Weaver',
-    'windrush': 'Windrush',
-    'tram': 'Tram',
-    #'tfl-rail': 'TfL Rail',
-    'dlr': 'DLR',
-    'bakerloo': 'Bakerloo',
-    'central': 'Central',
-    'circle': 'Circle',
-    'district': 'District',
-    'elizabeth': 'Elizabeth',
-    'hammersmith-city': 'Hammersmith & City',
-    'jubilee': 'Jubilee',
-    'metropolitan': 'Metropolitan',
-    'northern': 'Northern',
-    'piccadilly': 'Piccadilly',
-    'victoria': 'Victoria',
-    'waterloo-city': 'Waterloo & City',
+# A rate-limited line is retried, but only so many times: app.py awaits this script, so
+# retrying forever would freeze the 60s refresh loop with no error and no new data.
+MAX_FETCH_ATTEMPTS = 5
+RATE_LIMIT_FALLBACK_DELAY = 10  # used when TfL's 429 body has no "Try again in N second"
+MAX_RATE_LIMIT_DELAY = 60  # clamp, so a large value from TfL cannot stall the run
+
+# TfL line identifiers (URL path segments) -> display names.
+# London Overground was split into 6 named lines in 2024.
+LINES = {
+    "liberty": "Liberty",
+    "lioness": "Lioness",
+    "mildmay": "Mildmay",
+    "suffragette": "Suffragette",
+    "weaver": "Weaver",
+    "windrush": "Windrush",
+    "tram": "Tram",
+    # "tfl-rail": "TfL Rail",
+    "dlr": "DLR",
+    "bakerloo": "Bakerloo",
+    "central": "Central",
+    "circle": "Circle",
+    "district": "District",
+    "elizabeth": "Elizabeth",
+    "hammersmith-city": "Hammersmith & City",
+    "jubilee": "Jubilee",
+    "metropolitan": "Metropolitan",
+    "northern": "Northern",
+    "piccadilly": "Piccadilly",
+    "victoria": "Victoria",
+    "waterloo-city": "Waterloo & City",
 }
 
-def canon_station_name(s, line):
-    """Given a station name, try and reword it to match the station list"""
+# Single-letter line keys used in stations.json -> full line names.
+LINE_ABBREVIATIONS = {
+    "B": "bakerloo",
+    "C": "central",
+    "D": "district",
+    "E": "elizabeth",
+    "H": "hammersmith-city",
+    "J": "jubilee",
+    "M": "metropolitan",
+    "N": "northern",
+    "P": "piccadilly",
+    "V": "victoria",
+    "W": "waterloo-city",
+}
+
+# current_location values that are not on the running network, so cannot be plotted.
+UNPLOTTABLE_LOCATIONS = (
+    "Siding",
+    "Depot",
+    "Network Rail Track",
+    "North Acton Junction",
+    "Lord's Disused",
+    "Road 21",  # stations.json has no location for this
+)
+
+Coord = tuple[float, float]
+StationLocations = dict[str, dict[str, Coord]]
+
+
+def build_opener() -> urllib.request.OpenerDirector:
+    """Build the HTTP opener, verifying TLS against the OS trust store when possible.
+
+    Python verifies TLS with OpenSSL, which loads every CA from the Windows cert store
+    in one go and rejects the whole bundle if any single cert is malformed. That breaks
+    HTTPS entirely on machines whose store contains such a cert -- and machines running
+    TLS-intercepting antivirus (Avast, Zscaler, ...) also need the AV's private root,
+    which certifi does not ship. truststore sidesteps both by delegating verification to
+    the OS's native APIs. It is optional: without it we fall back to Python's default.
+    """
+    handlers = []
+    if truststore is not None:
+        handlers.append(urllib.request.HTTPSHandler(
+            context=truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ))
+    opener = urllib.request.build_opener(*handlers)
+    opener.addheaders = [("User-Agent", USER_AGENT)]
+    return opener
+
+
+def canon_station_name(s: str, line: str) -> str:
+    """Reword a station name from the TfL API to match the keys in stations.json."""
     s = s.strip()
-    s = re.sub('^Heathrow$', 'Heathrow Terminals 1, 2, 3', s)
-    s = re.sub('^Olympia$', 'Kensington (Olympia)', s)
-    s = re.sub('^Warwick Ave$', 'Warwick Avenue', s)
-    s = re.sub('^Camden$', 'Camden Town', s)
-    s = re.sub('Notting Hill Ga$', 'Notting Hill Gate', s)
-    s = re.sub('High Street Kensingt$', 'High Street Kensington', s)
-    s = s.replace('Camden Town (20B-20A)', 'Camden Town')
-    s = s.replace('Camden Town at Point 20A', 'Camden Town')
-    s = re.sub('^Central$', 'Finchley Central', s) # They say "Between Central and East Finchley"
-    s = re.sub('\s*Platform \d+$', '', s)
-    if line == 'tram':
-        s = s + ' Tram Stop'
-    elif line in ('dlr', 'london-overground', 'elizabeth'):
+    s = re.sub(r"^Heathrow$", "Heathrow Terminals 1, 2, 3", s)
+    s = re.sub(r"^Olympia$", "Kensington (Olympia)", s)
+    s = re.sub(r"^Warwick Ave$", "Warwick Avenue", s)
+    s = re.sub(r"^Camden$", "Camden Town", s)
+    s = re.sub(r"Notting Hill Ga$", "Notting Hill Gate", s)
+    s = re.sub(r"High Street Kensingt$", "High Street Kensington", s)
+    s = s.replace("Camden Town (20B-20A)", "Camden Town")
+    s = s.replace("Camden Town at Point 20A", "Camden Town")
+    s = re.sub(r"^Central$", "Finchley Central", s)  # "Between Central and East Finchley"
+    s = re.sub(r"\s*Platform \d+$", "", s)
+
+    if line == "tram":
+        s = s + " Tram Stop"
+    elif line in ("dlr", "london-overground", "elizabeth"):
         pass
     else:
-        s = s + ' Station'
-    s = s.replace(' & ', ' &amp; ') # XXX
-    if isinstance(s, str):
-        s = s.replace('\xe2\x80\x99', "'")
-    else:
-        s = s.replace(u'\u2019', "'")
-    s = s.replace('(Bakerloo)', 'Bakerloo').replace('Earls', 'Earl\'s') \
-        .replace(' fast ', ' ') \
-        .replace('St ', 'St. ') \
-        .replace('Warren St.', 'Warren Street') \
-        .replace('Warren Station', 'Warren Street Station') \
-        .replace('Elephant and Castle', 'Elephant &amp; Castle') \
-        .replace('Elephant Station', 'Elephant &amp; Castle Station') \
-        .replace('Lambeth Station', 'Lambeth North Station') \
-        .replace('Castle and Lambeth North Station', 'Lambeth North Station') \
-        .replace('Castle and Kennington Station', 'Kennington Station') \
-        .replace('Kenntington', 'Kennington') \
-        .replace('Willlesden Green', 'Willesden Green') \
-        .replace('Chalfont Station', 'Chalfont &amp; Latimer Station') \
-        .replace('Chalfont and Latimer Station', 'Chalfont &amp; Latimer Station') \
-        .replace('West Brompon', 'West Brompton') \
-        .replace('Picadilly Circus', 'Piccadilly Circus') \
-        .replace("Queen's' Park", "Queen's Park") \
-        .replace('High Barent', 'High Barnet') \
-        .replace('Highbury &amp; Isl ', 'Highbury &amp; Islington ') \
-        .replace('Bartnet', 'Barnet') \
-        .replace('Faringdon', 'Farringdon') \
-        .replace('Turnham Greens', 'Turnham Green') \
-        .replace('Ruilsip', 'Ruislip') \
-        .replace('Dagemham', 'Dagenham') \
-        .replace('Paddington H &amp; C', 'Paddington') \
-        .replace('Paddington (H&C Line)-Underground Station', 'Paddington Station') \
-        .replace('Paddington (Suburban)', 'Paddington') \
-        .replace('Edgware Road (H &amp; C)', 'Edgware Road Circle') \
-        .replace('Edgware Road Platform 1 and 2', 'Edgware Road Circle') \
-        .replace('Hammersmith (Circle and H&amp;C)', 'Hammersmith') \
-        .replace('Hammersmith (C&amp;H)', 'Hammersmith') \
-        .replace('Shepherds Bush (Central Line)', "Shepherd's Bush") \
-        .replace('Shepherds Bush Market', "Shepherd's Bush Market") \
-        .replace('Terminals 123', 'Terminals 1, 2, 3').replace('Terminal 1,2,3', 'Terminals 1, 2, 3') \
-        .replace('Woodford Junction', 'Woodford') \
-        .replace("King's Cross Station", "King's Cross St. Pancras Station") \
-        .replace("Kings Cross St. P Station", "King's Cross St. Pancras Station") \
-        .replace("Kings Cross St. Pancras Station", "King's Cross St. Pancras Station") \
-        .replace("Kings Cross Station", "King's Cross St. Pancras Station") \
-        .replace('Central Finchley', 'Finchley Central') \
-        .replace('District and Picc', 'D &amp; P') \
-        .replace('Finchley Central on the Southbound road', 'Finchley Central') \
-        .replace('South Fields', 'Southfields') \
-        .replace('Regents Park', "Regent's Park") \
-        .replace('Bromley-by-Bow', "Bromley-By-Bow") \
-        .replace('Brent Oak', 'Burnt Oak') \
-        .replace('St. Johns Wood', "St. John's Wood") \
-        .replace('St. John Wood', "St. John's Wood") \
-        .replace('Totteridge and Whetstone', 'Totteridge &amp; Whetstone') \
-        .replace('Newbury Park Loop', 'Newbury Park') \
-        .replace('ALperton', 'Alperton') \
-        .replace('Moor park', 'Moor Park') \
-        .replace('Harrow-on-the-Hill', 'Harrow on the Hill').replace('Harrow-On-The-Hill', 'Harrow on the Hill')
-    if s == 'Edgware Road Station' and line == 'B':
-        s = 'Edgware Road Bakerloo Station'
-    if s == 'Edgware Road Station' and line != 'B':
-        s = 'Edgware Road Circle Station'
+        s = s + " Station"
+
+    s = s.replace(" & ", " &amp; ")  # XXX
+    s = s.replace("’", "'")
+
+    s = (
+        s.replace("(Bakerloo)", "Bakerloo")
+        .replace("Earls", "Earl's")
+        .replace(" fast ", " ")
+        .replace("St ", "St. ")
+        .replace("Warren St.", "Warren Street")
+        .replace("Warren Station", "Warren Street Station")
+        .replace("Elephant and Castle", "Elephant &amp; Castle")
+        .replace("Elephant Station", "Elephant &amp; Castle Station")
+        .replace("Lambeth Station", "Lambeth North Station")
+        .replace("Castle and Lambeth North Station", "Lambeth North Station")
+        .replace("Castle and Kennington Station", "Kennington Station")
+        .replace("Kenntington", "Kennington")
+        .replace("Willlesden Green", "Willesden Green")
+        .replace("Chalfont Station", "Chalfont &amp; Latimer Station")
+        .replace("Chalfont and Latimer Station", "Chalfont &amp; Latimer Station")
+        .replace("West Brompon", "West Brompton")
+        .replace("Picadilly Circus", "Piccadilly Circus")
+        .replace("Queen's' Park", "Queen's Park")
+        .replace("High Barent", "High Barnet")
+        .replace("Highbury &amp; Isl ", "Highbury &amp; Islington ")
+        .replace("Bartnet", "Barnet")
+        .replace("Faringdon", "Farringdon")
+        .replace("Turnham Greens", "Turnham Green")
+        .replace("Ruilsip", "Ruislip")
+        .replace("Dagemham", "Dagenham")
+        .replace("Paddington H &amp; C", "Paddington")
+        .replace("Paddington (H&C Line)-Underground Station", "Paddington Station")
+        .replace("Paddington (Suburban)", "Paddington")
+        .replace("Edgware Road (H &amp; C)", "Edgware Road Circle")
+        .replace("Edgware Road Platform 1 and 2", "Edgware Road Circle")
+        .replace("Hammersmith (Circle and H&amp;C)", "Hammersmith")
+        .replace("Hammersmith (C&amp;H)", "Hammersmith")
+        .replace("Shepherds Bush (Central Line)", "Shepherd's Bush")
+        .replace("Shepherds Bush Market", "Shepherd's Bush Market")
+        .replace("Terminals 123", "Terminals 1, 2, 3")
+        .replace("Terminal 1,2,3", "Terminals 1, 2, 3")
+        .replace("Woodford Junction", "Woodford")
+        .replace("King's Cross Station", "King's Cross St. Pancras Station")
+        .replace("Kings Cross St. P Station", "King's Cross St. Pancras Station")
+        .replace("Kings Cross St. Pancras Station", "King's Cross St. Pancras Station")
+        .replace("Kings Cross Station", "King's Cross St. Pancras Station")
+        .replace("Central Finchley", "Finchley Central")
+        .replace("District and Picc", "D &amp; P")
+        .replace("Finchley Central on the Southbound road", "Finchley Central")
+        .replace("South Fields", "Southfields")
+        .replace("Regents Park", "Regent's Park")
+        .replace("Bromley-by-Bow", "Bromley-By-Bow")
+        .replace("Brent Oak", "Burnt Oak")
+        .replace("St. Johns Wood", "St. John's Wood")
+        .replace("St. John Wood", "St. John's Wood")
+        .replace("Totteridge and Whetstone", "Totteridge &amp; Whetstone")
+        .replace("Newbury Park Loop", "Newbury Park")
+        .replace("ALperton", "Alperton")
+        .replace("Moor park", "Moor Park")
+        .replace("Harrow-on-the-Hill", "Harrow on the Hill")
+        .replace("Harrow-On-The-Hill", "Harrow on the Hill")
+    )
+
+    if s == "Edgware Road Station":
+        s = "Edgware Road Bakerloo Station" if line == "B" else "Edgware Road Circle Station"
     return s
 
-def parse_time(s):
-    """Converts time in MM:SS, or - for 0, to time in seconds"""
 
-    if isinstance(s, int): return s
+def parse_time(s: str | int) -> int:
+    """Convert 'MM:SS', 'HH:MM:SS', '-' or 'due' into seconds."""
+    if isinstance(s, int):
+        return s
+    if s in ("-", "due"):
+        return 0
 
-    if s == '-' or s == 'due': return 0
-    m = re.match('(\d+):(\d+):(\d+)$', s)
+    m = re.match(r"(\d+):(\d+):(\d+)$", s)
     if m:
-        return int(m.group(1))*3600 + int(m.group(2))*60 + int(m.group(3))
-    m = re.match('(\d+):(\d+)$', s)
+        return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+
+    m = re.match(r"(\d+):(\d+)$", s)
     if not m:
-        raise Exception('Did not match time %s' % s)
-    return int(m.group(1))*60 + int(m.group(2))
-
-# Loop through the trains
-out = OrderedDict()
-outNext = {}
-
-def parse_entry(time_to_station, set_id, dest_code, destination, current_location, station_name, key, platform_name):
-    global sub_id, sub_ids
-
-    time_to_station = parse_time(time_to_station)
-    train_key = set_id
-    train_key += '-%s' % dest_code
-    if set_id in ('000', '477') or destination in ('Unknown', 'Special', 'Network Rail TOC') or dest_code == '0':
-    #or (set_id in ('015', '062', '113', '124') and key == 'N'):
-        lookup = re.sub('\s*Platform \d+$', '', current_location)
-        if current_location == 'At Platform':
-            lookup = 'At %s' % station_name
-        if not sub_ids.get(lookup):
-            sub_ids[lookup] = sub_id
-            sub_id += 1
-        train_key += '-%s' % sub_ids[lookup]
-    entry = {
-        'station_name': canon_station_name(re.sub('\.$', '', station_name), key),
-        'platform_name': platform_name,
-        'current_location': current_location,
-        'time_to_station': time_to_station,
-        'destination': destination,
-    }
-    if time_to_station < out.get(key, {}).get(train_key, {}).get('time_to_station', 999999):
-        out.setdefault(key, OrderedDict())[train_key] = entry
-    outNext.setdefault(key, {}).setdefault(train_key, []).append(entry)
-    #print '%s %s %s | %s %s %s' % (key, station_name, platform_name, set_id, time_to_station, current_location)
-
-def parse_json(live):
-    for prediction in live:
-        station_name = prediction['stationName'].replace(' Underground Station', '')
-        current_location = prediction.get('currentLocation', '')
-        dest_code = prediction.get('destinationNaptanId', '0')
-        parse_entry(prediction['timeToStation'], prediction['vehicleId'], dest_code,
-            prediction['towards'], current_location, station_name, key, prediction['platformName'])
+        raise ValueError("Did not match time %s" % s)
+    return int(m.group(1)) * 60 + int(m.group(2))
 
 
-_opener = urllib.request.build_opener()
-_opener.addheaders = [('User-Agent', 'Mozilla/5.0 (compatible; underground-live-map/1.0)')]
-urllib.request.install_opener(_opener)
+def load_station_locations(path: Path) -> StationLocations:
+    """Load stations.json, normalising 'lng,lat' strings and expanding line abbreviations."""
+    with open(path, encoding="utf-8") as fp:
+        stations: dict[str, Any] = json.load(fp)
 
-for key, line in lines.items():
-    sub_id = 0
-    sub_ids = {}
-    try:
-        if time.time() - os.path.getmtime('cache/%s' % key) > 100:
-            raise Exception('Too old')
-        live = open(dir + 'cache/%s' % key).read()
-        live = json.loads(live)
-    except:
-        _skip = False
-        while True:
-            try:
-                live = urllib.request.urlopen(api % key, timeout=10).read()
-            except urllib.error.URLError as e:
-                print('Warning: network error fetching %s: %s' % (key, e), file=sys.stderr)
-                _skip = True
-                break
-            except urllib.error.HTTPError as e:
-                if e.code == 429:
-                    #print live['message']
-                    try:
-                        m = re.search('Try again in (\d+) second', live)
-                        time.sleep(int(m.group(1)))
-                    except:
-                        time.sleep(10)
-                    continue
-                else:
-                    print('Warning: HTTP %d fetching %s, skipping' % (e.code, key), file=sys.stderr)
-                    _skip = True
-                    break
-            fp = open(dir + 'cache/%s' % key, 'wb')
-            fp.write(live)
-            fp.close()
-            live = json.loads(live)
-            break
-        if _skip:
-            continue
+    for name, pts in stations.items():
+        if isinstance(pts, str):
+            lng, lat = pts.split(",")
+            stations[name] = {"*": (float(lat), float(lng))}
 
-    parse_json(live)
+        for abbrev, full in LINE_ABBREVIATIONS.items():
+            if abbrev in stations[name]:
+                stations[name][full] = stations[name][abbrev]
+                if abbrev == "H":
+                    stations[name]["circle"] = stations[name][abbrev]
 
-# Remove trains that have the same ID, but a higher time_to_station - probably the same train
-print_debug( "Removing duplicate trains")
-#dupes = set()
-for key, ids in list(out.items()):
-    for id, arr in list(ids.items()):
-        for key2, ids2 in list(out.items()):
-            if key == key2: continue
-            for id2, arr2 in list(ids2.items()):
-                if id == id2:
-                    if arr['time_to_station'] < arr2['time_to_station']:
-                        if out[key].get(id2): del out[key2][id2]
-                    else:
-                        if out[key].get(id): del out[key][id]
-#for key, ids in out.items():
-#    out[key] = {id:arr for id,arr in ids.items() if (key, id) not in dupes}
+    return stations
 
-def lookup(line, name):
-    if name not in station_locations:
+
+def lookup(stations: StationLocations, line: str, name: str) -> Coord:
+    """Return (lat, lng) for a station on a line; (0, 0) if it cannot be resolved."""
+    if name not in stations:
         return (0, 0)
-    if line in station_locations[name]:
-        return station_locations[name][line]
-    #print_debug(name, line, station_locations[name])
+    if line in stations[name]:
+        return stations[name][line]
+    if "*" in stations[name]:
+        return stations[name]["*"]
+    log.warning("Could not look up %s on line %s", name, line)
+    return (0, 0)
+
+
+def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> list[dict] | None:
+    """Return the raw predictions for one line, from cache if fresh, else over HTTP.
+
+    Returns None if the line should be skipped. Every failure mode here is per-line: a
+    bad response, a corrupt cache entry or a rate limit must never abort the whole run,
+    because that would lose the other 19 lines too.
+    """
+    cache_file = cache_dir / key
+
     try:
-        return station_locations[name]['*']
-    except:
-        if options.stations == 'stations.-schematic.json':
-            return random.choice(list(station_locations[name].values()))
-        print('Error looking up', name, line, station_locations[name])
+        if time.time() - cache_file.stat().st_mtime <= ttl:
+            log.debug("Using cached data for %s", key)
+            return json.loads(cache_file.read_bytes())
+    # ValueError covers JSONDecodeError: a cache entry truncated by a killed process or
+    # a full disk must be re-fetched, not raised. Left uncaught it would poison every
+    # subsequent run too, since the bad file stays on disk.
+    except (OSError, ValueError) as exc:
+        if not isinstance(exc, FileNotFoundError):
+            log.warning("Discarding unusable cache entry for %s: %s", key, exc)
 
-print_debug ("Processing stations")
-for line, ids in out.items():
-    for id, arr in ids.items():
-        if 'Siding' in arr['current_location']: continue
-        if 'Depot' in arr['current_location']: continue
-        if 'Network Rail Track' in arr['current_location']: continue
-        if 'North Acton Junction' in arr['current_location']: continue
-        if "Lord's Disused" in arr['current_location']: continue
-        if 'Road 21' in arr['current_location']: continue # List doesn't have its location
-
-        station_name = arr['station_name']
-        if arr['current_location'] == 'At Platform':
-            arr['location'] = lookup(line, station_name)
-
-        if not arr['current_location'] and line in ('dlr', 'london-overground', 'tram', 'elizabeth'):
-            arr['location'] = lookup(line, station_name)
-
-        m = re.match('(?:South of|Leaving|Left) (.*?)(?:,? heading)?(?: (?:towards|to) .*)?$', arr['current_location'])
-        if m:
-            location_1 = lookup(line, canon_station_name(m.group(1), line))
-            location_2 = lookup(line, station_name)
-            fraction = 30 / (arr['time_to_station'] + 30)
-            arr['location'] = (location_1[0] + (fraction*(location_2[0]-location_1[0])), location_1[1] + (fraction*(location_2[1]-location_1[1])))
-
-        m = re.match('Between (.*?) and (.*)', arr['current_location'])
-        if m:
-            if line == 'H' and station_name != canon_station_name(m.group(2),line):
+    for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
+        try:
+            raw = urllib.request.urlopen(api % key, timeout=HTTP_TIMEOUT).read()
+        # HTTPError MUST be caught before URLError: it is a subclass of it, so the
+        # reverse order (as this script had previously) made the 429 retry unreachable.
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429:
+                delay = RATE_LIMIT_FALLBACK_DELAY
+                try:
+                    body = exc.read().decode("utf-8", "replace")
+                    m = re.search(r"Try again in (\d+) second", body)
+                    if m:
+                        delay = min(int(m.group(1)), MAX_RATE_LIMIT_DELAY)
+                except Exception:  # noqa: BLE001 - body is best-effort only
+                    pass
+                log.warning(
+                    "Rate limited fetching %s; retrying in %ds (attempt %d/%d)",
+                    key, delay, attempt, MAX_FETCH_ATTEMPTS,
+                )
+                time.sleep(delay)
                 continue
-            location_1 = lookup(line, canon_station_name(m.group(1), line))
-            location_2 = lookup(line, canon_station_name(m.group(2), line))
-            max = arr['time_to_station']+30 if arr['time_to_station'] > 150 else 180
-            fraction = (max-arr['time_to_station']) / max
-            arr['location'] = (location_1[0] + (fraction*(location_2[0]-location_1[0])), location_1[1] + (fraction*(location_2[1]-location_1[1])))
+            log.warning("HTTP %d fetching %s, skipping", exc.code, key)
+            return None
+        # OSError subsumes URLError, socket timeouts and ssl.SSLError, so one bad line
+        # is skipped rather than aborting the whole run.
+        except OSError as exc:
+            log.warning("Network error fetching %s: %s", key, exc)
+            return None
 
-        m = re.match('Approaching (.*)', arr['current_location'])
-        if m:
-            # Don't know where we were previously, can't be bothered to work it out, needs to store history!
-            arr['location'] = lookup(line, canon_station_name(m.group(1), line))
+        # Parse before caching, so a non-JSON body (a maintenance page served with a 200,
+        # a captive portal) is skipped rather than being written to the cache and
+        # crashing this run and every later one.
+        try:
+            predictions = json.loads(raw)
+        except ValueError as exc:
+            log.warning("Malformed JSON fetching %s, skipping: %s", key, exc)
+            return None
 
-print_debug( "Building trains and travel time data") 
-## MJA 16jun11 Could do with a better description of this    
-if format=='traintimes':
-    outJ = {
-        'station': 'London Underground',
-        'lastupdate': datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),
-        'trains': [],
-        'stations': [],
-    }
-    outT = []
+        cache_file.write_bytes(raw)
+        log.debug("Fetched %s from the TfL API", key)
+        return predictions
+
+    # Rate limited on every attempt; give up on this line rather than blocking the
+    # refresh loop forever (app.py awaits this subprocess).
+    log.warning("Giving up on %s after %d rate-limited attempts", key, MAX_FETCH_ATTEMPTS)
+    return None
+
+
+class ParseState:
+    """Accumulates parsed arrivals. Replaces the module-level globals this script had."""
+
+    def __init__(self) -> None:
+        # Best (lowest time_to_station) entry per (line, train_key).
+        self.out: OrderedDict[str, OrderedDict[str, dict]] = OrderedDict()
+        # Every entry per (line, train_key), used to build each train's 'next' stop list.
+        self.out_next: dict[str, dict[str, list[dict]]] = {}
+        # Reset per line; disambiguates trains that share a set_id.
+        self.sub_id = 0
+        self.sub_ids: dict[str, int] = {}
+
+    def start_line(self) -> None:
+        self.sub_id = 0
+        self.sub_ids = {}
+
+    def add_entry(
+        self,
+        time_to_station: str | int,
+        set_id: str,
+        dest_code: str,
+        destination: str,
+        current_location: str,
+        station_name: str,
+        key: str,
+        platform_name: str,
+    ) -> None:
+        seconds = parse_time(time_to_station)
+        train_key = "%s-%s" % (set_id, dest_code)
+
+        ambiguous = (
+            set_id in ("000", "477")
+            or destination in ("Unknown", "Special", "Network Rail TOC")
+            or dest_code == "0"
+        )
+        if ambiguous:
+            marker = re.sub(r"\s*Platform \d+$", "", current_location)
+            if current_location == "At Platform":
+                marker = "At %s" % station_name
+            if not self.sub_ids.get(marker):
+                self.sub_ids[marker] = self.sub_id
+                self.sub_id += 1
+            train_key += "-%s" % self.sub_ids[marker]
+
+        entry = {
+            "station_name": canon_station_name(re.sub(r"\.$", "", station_name), key),
+            "platform_name": platform_name,
+            "current_location": current_location,
+            "time_to_station": seconds,
+            "destination": destination,
+        }
+
+        previous = self.out.get(key, {}).get(train_key, {}).get("time_to_station", 999999)
+        if seconds < previous:
+            self.out.setdefault(key, OrderedDict())[train_key] = entry
+        self.out_next.setdefault(key, {}).setdefault(train_key, []).append(entry)
+
+    def parse_predictions(self, live: list[dict], key: str) -> None:
+        for prediction in live:
+            station_name = prediction["stationName"].replace(" Underground Station", "")
+            self.add_entry(
+                prediction["timeToStation"],
+                prediction["vehicleId"],
+                prediction.get("destinationNaptanId", "0"),
+                prediction["towards"],
+                prediction.get("currentLocation", ""),
+                station_name,
+                key,
+                prediction["platformName"],
+            )
+
+
+def deduplicate_trains(out: OrderedDict[str, OrderedDict[str, dict]]) -> None:
+    """Drop trains sharing an ID across lines, keeping the lower time_to_station.
+
+    The same physical train can be reported on two lines (e.g. shared track). Whichever
+    copy is further away is the stale one.
+    """
+    for key, ids in list(out.items()):
+        for train_id, arr in list(ids.items()):
+            for key2, ids2 in list(out.items()):
+                if key == key2:
+                    continue
+                for id2, arr2 in list(ids2.items()):
+                    if train_id != id2:
+                        continue
+                    if arr["time_to_station"] < arr2["time_to_station"]:
+                        if out[key].get(id2):
+                            del out[key2][id2]
+                    else:
+                        if out[key].get(train_id):
+                            del out[key][train_id]
+
+
+def _interpolate(a: Coord, b: Coord, fraction: float) -> Coord:
+    return (a[0] + fraction * (b[0] - a[0]), a[1] + fraction * (b[1] - a[1]))
+
+
+def assign_locations(
+    out: OrderedDict[str, OrderedDict[str, dict]], stations: StationLocations
+) -> None:
+    """Set arr['location'] for each train by interpolating from its currentLocation text.
+
+    Trains whose location cannot be determined are left without a 'location' key and are
+    omitted from the map output.
+    """
     for line, ids in out.items():
-        for id, arr in ids.items():
-            outT.append({
-                'id': id, 'time': arr['time_to_station'], 'line': lines[line],
-                'current': arr['current_location'] == 'At Platform' and 'At ' + arr['station_name'] or arr['current_location'],
+        for arr in ids.values():
+            current = arr["current_location"]
+            if any(skip in current for skip in UNPLOTTABLE_LOCATIONS):
+                continue
+
+            station_name = arr["station_name"]
+            seconds = arr["time_to_station"]
+
+            # At the station itself.
+            if current == "At Platform":
+                arr["location"] = lookup(stations, line, station_name)
+
+            # These lines report no location at all; place at the next station.
+            if not current and line in ("dlr", "london-overground", "tram", "elizabeth"):
+                arr["location"] = lookup(stations, line, station_name)
+
+            # Departed a named station, heading to station_name.
+            m = re.match(r"(?:South of|Leaving|Left) (.*?)(?:,? heading)?(?: (?:towards|to) .*)?$", current)
+            if m:
+                depart = lookup(stations, line, canon_station_name(m.group(1), line))
+                arrive = lookup(stations, line, station_name)
+                arr["location"] = _interpolate(depart, arrive, 30 / (seconds + 30))
+
+            # Explicitly between two named stations.
+            m = re.match(r"Between (.*?) and (.*)", current)
+            if m:
+                if line == "H" and station_name != canon_station_name(m.group(2), line):
+                    continue
+                depart = lookup(stations, line, canon_station_name(m.group(1), line))
+                arrive = lookup(stations, line, canon_station_name(m.group(2), line))
+                span = seconds + 30 if seconds > 150 else 180
+                arr["location"] = _interpolate(depart, arrive, (span - seconds) / span)
+
+            # We don't know where it came from, so snap to the station it is approaching.
+            # Interpolating properly would need position history.
+            m = re.match(r"Approaching (.*)", current)
+            if m:
+                arr["location"] = lookup(stations, line, canon_station_name(m.group(1), line))
+
+
+def build_payload(state: ParseState, stations: StationLocations) -> tuple[dict, list]:
+    """Return (london.json payload, london-text.json payload)."""
+    out_map = {
+        "station": "London Underground",
+        "lastupdate": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "trains": [],
+        "stations": [],
+    }
+    out_text: list[dict] = []
+
+    for line, ids in state.out.items():
+        for train_id, arr in ids.items():
+            at_platform = arr["current_location"] == "At Platform"
+            out_text.append({
+                "id": train_id,
+                "time": arr["time_to_station"],
+                "line": LINES[line],
+                "current": "At " + arr["station_name"] if at_platform else arr["current_location"],
             })
-            if 'location' not in arr: continue
-            next = []
-            outNext[line][id].sort(key=lambda x: x['time_to_station'])
-            for n in outNext[line][id]:
-                stat = n['station_name']
-                location = lookup(line, stat)
-                mins = n['time_to_station']/60
-                if int(mins)==mins:
-                    mins_p = '%d' % mins
-                else:
-                    mins_p = '%.1f' % mins
-                next.append({
-                    'point': [ location[0], location[1] ],
-                    'name': stat,
-                    'mins': mins,
-                    'dexp': 'in %s minute%s' % (mins_p, '' if n['time_to_station']==60 else 's'),
+
+            if "location" not in arr:
+                continue
+
+            next_stops = []
+            for n in sorted(state.out_next[line][train_id], key=lambda x: x["time_to_station"]):
+                station = n["station_name"]
+                point = lookup(stations, line, station)
+                mins = n["time_to_station"] / 60
+                mins_p = "%d" % mins if int(mins) == mins else "%.1f" % mins
+                next_stops.append({
+                    "point": [point[0], point[1]],
+                    "name": station,
+                    "mins": mins,
+                    "dexp": "in %s minute%s" % (mins_p, "" if n["time_to_station"] == 60 else "s"),
                 })
-            outJ['trains'].append({
-                'point': [ arr['location'][0], arr['location'][1] ],
-                'next': next,
-                'left': '',
-                'id': '%s-%s' % (line, id),
-                'title': lines[line] + ' train to ' + arr['destination'] + ' [' + id + ']',
+
+            out_map["trains"].append({
+                "point": [arr["location"][0], arr["location"][1]],
+                "next": next_stops,
+                "left": "",
+                "id": "%s-%s" % (line, train_id),
+                "title": LINES[line] + " train to " + arr["destination"] + " [" + train_id + "]",
             })
 
-    for name, points in sorted(station_locations.items()):
-        _, foo = points.popitem()
-        lat, lon = foo
-        outJ['stations'].append({
-            'point': [ lat, lon ],
-            'name': name,
-        })
+    for name, points in sorted(stations.items()):
+        _, coord = points.popitem()
+        lat, lng = coord
+        out_map["stations"].append({"point": [lat, lng], "name": name})
 
-    grr = json.dumps(outJ, indent=2)
-    polylines = open(dir + 'london-lines.js').read()
-    grr = grr[:-2] + ',\n' + polylines + '}'
+    return out_map, out_text
 
-    fp = open(dir + options.output + '/london.jsonN', 'w')
-    fp.write(grr)
-    fp.close()
-    os.replace(dir + options.output + '/london.jsonN', dir + options.output + '/london.json')
 
-    json.dump(outT, open(dir + options.output + '/london-text.json', 'w'))
+def write_outputs(out_map: dict, out_text: list, output_dir: Path, polylines_file: Path) -> None:
+    """Write london.json (atomically) and london-text.json.
 
-print_debug( "Done")
+    london-lines.js is a raw JSON fragment ('"polylines": [...]') that is spliced into
+    the serialised payload, rather than being parsed and re-serialised.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    body = json.dumps(out_map, indent=2)
+    polylines = polylines_file.read_text(encoding="utf-8")
+    body = body[:-2] + ",\n" + polylines + "}"
+
+    tmp = output_dir / "london.jsonN"
+    tmp.write_text(body, encoding="utf-8")
+    # os.replace (not os.rename) so this is atomic and works on Windows.
+    os.replace(tmp, output_dir / "london.json")
+
+    with open(output_dir / "london-text.json", "w", encoding="utf-8") as fp:
+        json.dump(out_text, fp)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("-d", "--debug", action="store_true", help="verbose output")
+    parser.add_argument("-s", "--stations", default="stations.json",
+                        help="station location file, relative to this script")
+    parser.add_argument("-o", "--output", default="../data",
+                        help="output directory, relative to this script")
+    parser.add_argument("-c", "--cache-dir", default="cache",
+                        help="raw API response cache, relative to this script")
+    parser.add_argument("-k", "--app-key", default=os.environ.get("TFL_APP_KEY", ""),
+                        help="TfL API app key (or set TFL_APP_KEY)")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    options = parse_args(argv)
+    logging.basicConfig(
+        level=logging.DEBUG if options.debug else logging.INFO,
+        format="%(levelname)s %(name)s: %(message)s",
+        stream=sys.stderr,
+    )
+
+    cache_dir = (SCRIPT_DIR / options.cache_dir).resolve()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = (SCRIPT_DIR / options.output).resolve()
+
+    api = API_TEMPLATE + (("?app_key=" + options.app_key) if options.app_key else "")
+    if not options.app_key:
+        log.warning("No TFL_APP_KEY set; the TfL API will heavily rate-limit anonymous requests")
+
+    urllib.request.install_opener(build_opener())
+    if truststore is None:
+        log.debug("truststore not installed; using Python's default TLS verification")
+
+    log.info("Loading station locations from %s", options.stations)
+    stations = load_station_locations(SCRIPT_DIR / options.stations)
+
+    state = ParseState()
+    fetched = skipped = 0
+    for key in LINES:
+        state.start_line()
+        live = fetch_line(key, api, cache_dir)
+        if live is None:
+            skipped += 1
+            continue
+        state.parse_predictions(live, key)
+        fetched += 1
+
+    if skipped:
+        log.warning("Skipped %d of %d lines due to upstream errors", skipped, len(LINES))
+
+    log.debug("Removing duplicate trains")
+    deduplicate_trains(state.out)
+
+    log.debug("Interpolating train positions")
+    assign_locations(state.out, stations)
+
+    log.debug("Building output payloads")
+    out_map, out_text = build_payload(state, stations)
+
+    write_outputs(out_map, out_text, output_dir, SCRIPT_DIR / "london-lines.js")
+    log.info(
+        "Wrote %d trains (%d lines fetched) to %s",
+        len(out_map["trains"]), fetched, output_dir,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,22 @@
+{
+  "bakerloo": "#a45a2a",
+  "central": "#da291c",
+  "circle": "#ffcd00",
+  "district": "#007a33",
+  "hammersmith-city": "#e89cae",
+  "jubilee": "#7c878e",
+  "metropolitan": "#840b55",
+  "northern": "#000000",
+  "piccadilly": "#10069f",
+  "victoria": "#00a3e0",
+  "waterloo-city": "#6eceb2",
+  "dlr": "#00b2a9",
+  "elizabeth": "#9364cc",
+  "tram": "#78be20",
+  "liberty": "#606667",
+  "lioness": "#ef9600",
+  "mildmay": "#2774ae",
+  "suffragette": "#5ba763",
+  "weaver": "#893b67",
+  "windrush": "#d22730"
+}

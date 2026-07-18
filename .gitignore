@@ -3,7 +3,6 @@
 data/london.json
 data/london-text.json
 data/train-positions.json
-schematic/data
 bin/cache
 /tfwm/data
 /tfwm/bin/cache

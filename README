@@ -10,7 +10,7 @@ It is very hacky. Built on top of many-years-old code, with
 many hacks to get things working. But here it is anyway. Feel
 free to improve, it shouldn't be hard!
 
-Licence - PDMarker is LGPL. Pins/loading pretty generic. Rest is MIT.
+Licence - MIT.
 
 Issues
 ------
@@ -24,18 +24,24 @@ To install:
 * Create a Python virtual environment with `uv venv .venv`.
 * Install dependencies with `uv pip install --python .venv\Scripts\python.exe -r requirements.txt`.
 * Copy `.env.example` to `.env` and set `TFL_APP_KEY` to your TfL API key (register free at https://api-portal.tfl.gov.uk/).
-* Generate initial tube data by running `.venv\Scripts\python.exe bin/fetch.py` (creates `data/london.json` and `data/london-text.json`).
+* Generate initial tube data by running `.venv\Scripts\python.exe bin/fetch.py` (creates `data/london.json`,
+  `data/london-text.json`, and `data/train-positions.json`).
+* Build the frontend: `npm install && npm run build` (produces `dist/`, which the Python app serves at `/`).
 * Start the Python app with `.\.venv\Scripts\python.exe -m uvicorn pyapp.app:app --reload`.
-* Open `http://127.0.0.1:8000/index.html` for the map. The app refreshes tube data every 60 seconds automatically.
+* Open `http://127.0.0.1:8000/` for the live map. The app refreshes tube data every 30 seconds automatically.
+* For frontend development with hot reload instead, run `npm run dev` (proxies `/api` to the
+  uvicorn server on port 8000) and open the Vite dev server's own URL instead.
 
 Runtime notes
 -------------
 * PHP is no longer required for this project.
-* The app auto-refreshes `data/london.json` every 60 seconds in the background using `bin/fetch.py`.
-  Set the `TFL_APP_KEY` environment variable before starting uvicorn for live data.
+* The frontend is a React + MapLibre GL + deck.gl app (`src/`), built with Vite and served from `dist/`
+  at `/`. `pyapp/app.py` auto-refreshes tube data in the background using `bin/fetch.py` (every 30
+  seconds) and exposes it at `/api/trains`. Set the `TFL_APP_KEY` environment variable before starting
+  uvicorn for live data.
 * This project is London Underground only. The London bus and West Midlands (TfWM)
   maps were removed; see `plans/tube-only-fetch-modernisation.md`.
-* Python routes replace the old PHP endpoints:
+* Two independent, self-contained routes remain from the earlier PHP migration:
   * `/text` for textual underground output.
   * `/accessible?stop=<code>` for the accessible District page.
 

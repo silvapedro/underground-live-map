@@ -9,7 +9,5 @@ html, body, #root {
 
 #root {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  overflow: hidden;
 }

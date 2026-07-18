@@ -5,7 +5,6 @@ import shutil
 import time
 import urllib.error
 import urllib.request
-from collections import OrderedDict
 from pathlib import Path
 
 import pytest
@@ -94,96 +93,10 @@ def test_load_station_locations_expands_line_abbreviations():
     assert stations["Acton Town Station"]["*"] == (51.503057, -0.280462)
 
 
-def test_lookup_returns_zero_zero_for_unknown_station():
-    assert fetch.lookup({}, "victoria", "Nowhere Station") == (0, 0)
-
-
-def test_lookup_prefers_line_specific_over_wildcard():
-    stations = {"X": {"*": (1.0, 1.0), "victoria": (2.0, 2.0)}}
-    assert fetch.lookup(stations, "victoria", "X") == (2.0, 2.0)
-    assert fetch.lookup(stations, "central", "X") == (1.0, 1.0)
-
-
 # --------------------------------------------------------------------------
-# assign_locations — the five interpolation branches
-# --------------------------------------------------------------------------
-
-STATIONS = {
-    "A Station": {"*": (0.0, 0.0)},
-    "B Station": {"*": (10.0, 10.0)},
-}
-
-
-def _out(current_location, time_to_station, station_name="B Station"):
-    out = OrderedDict()
-    out["victoria"] = OrderedDict()
-    out["victoria"]["t1"] = {
-        "station_name": station_name,
-        "current_location": current_location,
-        "time_to_station": time_to_station,
-        "destination": "B",
-        "platform_name": "P1",
-    }
-    return out
-
-
-def test_interpolate_at_platform_uses_station_coords():
-    out = _out("At Platform", 0)
-    fetch.assign_locations(out, STATIONS)
-    assert out["victoria"]["t1"]["location"] == (10.0, 10.0)
-
-
-def test_interpolate_approaching_snaps_to_station():
-    out = _out("Approaching B", 30)
-    fetch.assign_locations(out, STATIONS)
-    assert out["victoria"]["t1"]["location"] == (10.0, 10.0)
-
-
-def test_interpolate_leaving_is_midpoint_at_zero_seconds():
-    # fraction = 30 / (0 + 30) = 1.0 -> all the way at the destination.
-    out = _out("Leaving A", 0)
-    fetch.assign_locations(out, STATIONS)
-    assert out["victoria"]["t1"]["location"] == (10.0, 10.0)
-
-
-def test_interpolate_leaving_moves_toward_destination_as_time_shrinks():
-    near = _out("Leaving A", 30)
-    far = _out("Leaving A", 570)
-    fetch.assign_locations(near, STATIONS)
-    fetch.assign_locations(far, STATIONS)
-    # fraction = 30/60 = 0.5 vs 30/600 = 0.05
-    assert near["victoria"]["t1"]["location"] == (5.0, 5.0)
-    assert far["victoria"]["t1"]["location"] == pytest.approx((0.5, 0.5))
-
-
-def test_interpolate_between_uses_180s_floor_when_time_below_150():
-    # span = 180 (not time+30), fraction = (180-90)/180 = 0.5
-    out = _out("Between A and B", 90)
-    fetch.assign_locations(out, STATIONS)
-    assert out["victoria"]["t1"]["location"] == pytest.approx((5.0, 5.0))
-
-
-def test_interpolate_between_uses_time_plus_30_when_time_above_150():
-    # span = 200+30 = 230, fraction = (230-200)/230
-    out = _out("Between A and B", 200)
-    fetch.assign_locations(out, STATIONS)
-    expected = 10.0 * (30 / 230)
-    assert out["victoria"]["t1"]["location"] == pytest.approx((expected, expected))
-
-
-@pytest.mark.parametrize("location", [
-    "At Ruislip Siding", "In Depot", "On Network Rail Track",
-    "North Acton Junction", "Lord's Disused", "At Road 21",
-])
-def test_unplottable_locations_get_no_position(location):
-    out = _out(location, 60)
-    fetch.assign_locations(out, STATIONS)
-    assert "location" not in out["victoria"]["t1"]
-
-
-# --------------------------------------------------------------------------
-# resolve_segment — the same five cases, expressed as station names + fraction
-# rather than coordinates. assign_locations is now a thin wrapper around this.
+# resolve_segment — the five currentLocation cases, expressed as station names
+# + a progress fraction rather than coordinates (coordinate resolution now
+# happens client-side, per rendering mode).
 # --------------------------------------------------------------------------
 
 def test_resolve_segment_at_platform_snaps_to_current_station():
@@ -416,11 +329,9 @@ def test_fetch_writes_both_output_files(frozen_cache, tmp_path, monkeypatch):
     out_dir = tmp_path / "data"
     _run(frozen_cache, out_dir, monkeypatch)
 
-    assert (out_dir / "london.json").is_file()
     assert (out_dir / "london-text.json").is_file()
     assert (out_dir / "train-positions.json").is_file()
-    # The atomic-write temp files must not be left behind.
-    assert not (out_dir / "london.jsonN").exists()
+    # The atomic-write temp file must not be left behind.
     assert not (out_dir / "train-positions.jsonN").exists()
 
 
@@ -450,21 +361,9 @@ def test_train_positions_omits_siding_trains_like_the_map_does(frozen_cache, tmp
     assert not any(t["id"].startswith("victoria-105") for t in positions["trains"])
 
 
-def test_london_json_matches_golden(frozen_cache, tmp_path, monkeypatch):
-    """The load-bearing regression test: given identical inputs, the whole
-    fetch -> parse -> dedupe -> interpolate -> serialise pipeline must produce
-    byte-identical output (modulo the lastupdate timestamp)."""
-    out_dir = tmp_path / "data"
-    _run(frozen_cache, out_dir, monkeypatch)
-
-    produced = json.loads((out_dir / "london.json").read_text(encoding="utf-8"))
-    golden = json.loads((FIXTURES / "golden-london.json").read_text(encoding="utf-8"))
-
-    produced["lastupdate"] = golden["lastupdate"] = "<normalised>"
-    assert produced == golden
-
-
 def test_london_text_json_matches_golden(frozen_cache, tmp_path, monkeypatch):
+    """The load-bearing regression test for the text pipeline: given identical inputs,
+    fetch -> parse -> dedupe -> serialise must produce byte-identical output."""
     out_dir = tmp_path / "data"
     _run(frozen_cache, out_dir, monkeypatch)
 
@@ -473,33 +372,12 @@ def test_london_text_json_matches_golden(frozen_cache, tmp_path, monkeypatch):
     assert produced == golden
 
 
-def test_london_json_has_frontend_contract(frozen_cache, tmp_path, monkeypatch):
-    """js/trains.js depends on this shape; changing it silently breaks every map."""
+def test_siding_train_still_appears_in_the_textual_listing(frozen_cache, tmp_path, monkeypatch):
+    """Train 105 is in a Siding: excluded from train-positions.json (see
+    test_train_positions_omits_siding_trains_like_the_map_does) but still listed as
+    text, since /text describes every train regardless of plottability."""
     out_dir = tmp_path / "data"
     _run(frozen_cache, out_dir, monkeypatch)
 
-    data = json.loads((out_dir / "london.json").read_text(encoding="utf-8"))
-    assert set(data) == {"station", "lastupdate", "trains", "stations", "polylines"}
-
-    train = data["trains"][0]
-    assert set(train) == {"point", "next", "left", "id", "title"}
-    assert len(train["point"]) == 2
-
-    stop = train["next"][0]
-    assert set(stop) == {"point", "name", "mins", "dexp"}
-
-    station = data["stations"][0]
-    assert set(station) == {"point", "name"}
-
-
-def test_siding_trains_are_excluded_from_the_map(frozen_cache, tmp_path, monkeypatch):
-    """Train 105 is in a Siding: it must not be plotted, but must still appear in the
-    textual listing."""
-    out_dir = tmp_path / "data"
-    _run(frozen_cache, out_dir, monkeypatch)
-
-    data = json.loads((out_dir / "london.json").read_text(encoding="utf-8"))
     text = json.loads((out_dir / "london-text.json").read_text(encoding="utf-8"))
-
-    assert not any(t["id"].startswith("victoria-105") for t in data["trains"])
     assert any(r["id"].startswith("105") for r in text)

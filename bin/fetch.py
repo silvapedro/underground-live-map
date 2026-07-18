@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate data/london.json and data/london-text.json from the TfL Arrivals API.
+"""Generate data/train-positions.json and data/london-text.json from the TfL Arrivals API.
 
-The client-side code (js/trains.js) consumes london.json for live train positions
-and the static station/polyline geography. pyapp/app.py runs this script as a
-subprocess every 60 seconds.
+The frontend (src/) polls GET /api/trains, which pyapp/services/tube_positions.py backs
+with data/train-positions.json -- each train's position is a coordinate-free
+{fromStation, toStation, fraction}, resolved into real or schematic pixels client-side.
+pyapp/app.py runs this script as a subprocess every DATA_REFRESH_INTERVAL seconds.
 
 Usage:
     python bin/fetch.py [--app-key KEY] [--debug]
@@ -12,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
 import logging
 import os
@@ -255,18 +255,6 @@ def load_station_locations(path: Path) -> StationLocations:
     return stations
 
 
-def lookup(stations: StationLocations, line: str, name: str) -> Coord:
-    """Return (lat, lng) for a station on a line; (0, 0) if it cannot be resolved."""
-    if name not in stations:
-        return (0, 0)
-    if line in stations[name]:
-        return stations[name][line]
-    if "*" in stations[name]:
-        return stations[name]["*"]
-    log.warning("Could not look up %s on line %s", name, line)
-    return (0, 0)
-
-
 def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> list[dict] | None:
     """Return the raw predictions for one line, from cache if fresh, else over HTTP.
 
@@ -430,10 +418,6 @@ def deduplicate_trains(out: OrderedDict[str, OrderedDict[str, dict]]) -> None:
                             del out[key][train_id]
 
 
-def _interpolate(a: Coord, b: Coord, fraction: float) -> Coord:
-    return (a[0] + fraction * (b[0] - a[0]), a[1] + fraction * (b[1] - a[1]))
-
-
 @dataclass
 class Segment:
     """A train's position expressed as progress between two named stations.
@@ -451,9 +435,9 @@ class Segment:
 def resolve_segment(current: str, station_name: str, seconds: int, line: str) -> Segment | None:
     """Determine the (from, to, fraction) segment for a train from its currentLocation text.
 
-    This is the same five-case pattern match assign_locations has always used, split out
-    so it returns station names instead of immediately resolving coordinates -- the pure
-    "where is this train, structurally" logic, independent of any coordinate lookup.
+    Five cases: At Platform / no-location lines (dlr, overground, tram, elizabeth) /
+    Leaving-South of-Left / Between / Approaching. Returns station names and a progress
+    fraction rather than coordinates -- coordinate resolution is the caller's job.
     Returns None if the location text cannot be resolved (train is omitted from output).
     """
     # At the station itself.
@@ -490,37 +474,8 @@ def resolve_segment(current: str, station_name: str, seconds: int, line: str) ->
     return None
 
 
-def assign_locations(
-    out: OrderedDict[str, OrderedDict[str, dict]], stations: StationLocations
-) -> None:
-    """Set arr['location'] for each train by interpolating from its currentLocation text.
-
-    Trains whose location cannot be determined are left without a 'location' key and are
-    omitted from the map output.
-    """
-    for line, ids in out.items():
-        for arr in ids.values():
-            current = arr["current_location"]
-            if any(skip in current for skip in UNPLOTTABLE_LOCATIONS):
-                continue
-
-            seg = resolve_segment(current, arr["station_name"], arr["time_to_station"], line)
-            if seg is None:
-                continue
-
-            depart = lookup(stations, line, seg.from_station)
-            arrive = lookup(stations, line, seg.to_station)
-            arr["location"] = _interpolate(depart, arrive, seg.fraction)
-
-
-def build_payload(state: ParseState, stations: StationLocations) -> tuple[dict, list]:
-    """Return (london.json payload, london-text.json payload)."""
-    out_map = {
-        "station": "London Underground",
-        "lastupdate": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "trains": [],
-        "stations": [],
-    }
+def build_text_payload(state: ParseState) -> list[dict]:
+    """Return the london-text.json payload: a flat per-train listing for /text."""
     out_text: list[dict] = []
 
     for line, ids in state.out.items():
@@ -533,36 +488,7 @@ def build_payload(state: ParseState, stations: StationLocations) -> tuple[dict, 
                 "current": "At " + arr["station_name"] if at_platform else arr["current_location"],
             })
 
-            if "location" not in arr:
-                continue
-
-            next_stops = []
-            for n in sorted(state.out_next[line][train_id], key=lambda x: x["time_to_station"]):
-                station = n["station_name"]
-                point = lookup(stations, line, station)
-                mins = n["time_to_station"] / 60
-                mins_p = "%d" % mins if int(mins) == mins else "%.1f" % mins
-                next_stops.append({
-                    "point": [point[0], point[1]],
-                    "name": station,
-                    "mins": mins,
-                    "dexp": "in %s minute%s" % (mins_p, "" if n["time_to_station"] == 60 else "s"),
-                })
-
-            out_map["trains"].append({
-                "point": [arr["location"][0], arr["location"][1]],
-                "next": next_stops,
-                "left": "",
-                "id": "%s-%s" % (line, train_id),
-                "title": LINES[line] + " train to " + arr["destination"] + " [" + train_id + "]",
-            })
-
-    for name, points in sorted(stations.items()):
-        _, coord = points.popitem()
-        lat, lng = coord
-        out_map["stations"].append({"point": [lat, lng], "name": name})
-
-    return out_map, out_text
+    return out_text
 
 
 def build_train_positions(state: ParseState) -> list[dict]:
@@ -599,28 +525,9 @@ def build_train_positions(state: ParseState) -> list[dict]:
     return positions
 
 
-def write_outputs(
-    out_map: dict,
-    out_text: list,
-    train_positions: list[dict],
-    output_dir: Path,
-    polylines_file: Path,
-) -> None:
-    """Write london.json (atomically), london-text.json, and train-positions.json.
-
-    london-lines.js is a raw JSON fragment ('"polylines": [...]') that is spliced into
-    the serialised payload, rather than being parsed and re-serialised.
-    """
+def write_outputs(out_text: list, train_positions: list[dict], output_dir: Path) -> None:
+    """Write london-text.json and train-positions.json (the latter atomically)."""
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    body = json.dumps(out_map, indent=2)
-    polylines = polylines_file.read_text(encoding="utf-8")
-    body = body[:-2] + ",\n" + polylines + "}"
-
-    tmp = output_dir / "london.jsonN"
-    tmp.write_text(body, encoding="utf-8")
-    # os.replace (not os.rename) so this is atomic and works on Windows.
-    os.replace(tmp, output_dir / "london.json")
 
     with open(output_dir / "london-text.json", "w", encoding="utf-8") as fp:
         json.dump(out_text, fp)
@@ -628,14 +535,13 @@ def write_outputs(
     positions_body = json.dumps({"updatedAt": time.time(), "trains": train_positions})
     positions_tmp = output_dir / "train-positions.jsonN"
     positions_tmp.write_text(positions_body, encoding="utf-8")
+    # os.replace (not os.rename) so this is atomic and works on Windows.
     os.replace(positions_tmp, output_dir / "train-positions.json")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("-d", "--debug", action="store_true", help="verbose output")
-    parser.add_argument("-s", "--stations", default="stations.json",
-                        help="station location file, relative to this script")
     parser.add_argument("-o", "--output", default="../data",
                         help="output directory, relative to this script")
     parser.add_argument("-c", "--cache-dir", default="cache",
@@ -665,9 +571,6 @@ def main(argv: list[str] | None = None) -> int:
     if truststore is None:
         log.debug("truststore not installed; using Python's default TLS verification")
 
-    log.info("Loading station locations from %s", options.stations)
-    stations = load_station_locations(SCRIPT_DIR / options.stations)
-
     state = ParseState()
     fetched = skipped = 0
     for key in LINES:
@@ -685,19 +588,16 @@ def main(argv: list[str] | None = None) -> int:
     log.debug("Removing duplicate trains")
     deduplicate_trains(state.out)
 
-    log.debug("Interpolating train positions")
-    assign_locations(state.out, stations)
-
     log.debug("Building train position payload")
     train_positions = build_train_positions(state)
 
     log.debug("Building output payloads")
-    out_map, out_text = build_payload(state, stations)
+    out_text = build_text_payload(state)
 
-    write_outputs(out_map, out_text, train_positions, output_dir, SCRIPT_DIR / "london-lines.js")
+    write_outputs(out_text, train_positions, output_dir)
     log.info(
         "Wrote %d trains (%d lines fetched) to %s",
-        len(out_map["trains"]), fetched, output_dir,
+        len(train_positions), fetched, output_dir,
     )
     return 0
 

@@ -28,8 +28,8 @@ REPO_ROOT = BASE_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
 FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
 
-# How often (seconds) to refresh london.json / train-positions.json. fetch.py's own
-# per-line disk cache has a 100s TTL, so most of these refreshes are cache hits and
+# How often (seconds) to refresh train-positions.json / london-text.json. fetch.py's
+# own per-line disk cache has a 100s TTL, so most of these refreshes are cache hits and
 # don't add extra TfL API calls -- they just get fresher data into the frontend sooner.
 DATA_REFRESH_INTERVAL = 30
 

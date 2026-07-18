@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-    "uvicorn>=0.51.0",
-]
+
+# requirements.txt is the real dependency manifest (installed via
+# uv pip install --python .venv/Scripts/python.exe -r requirements.txt, see README).
+# This file is deliberately just packaging metadata, not a second dependency list.

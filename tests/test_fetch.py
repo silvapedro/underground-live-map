@@ -182,6 +182,61 @@ def test_unplottable_locations_get_no_position(location):
 
 
 # --------------------------------------------------------------------------
+# resolve_segment — the same five cases, expressed as station names + fraction
+# rather than coordinates. assign_locations is now a thin wrapper around this.
+# --------------------------------------------------------------------------
+
+def test_resolve_segment_at_platform_snaps_to_current_station():
+    seg = fetch.resolve_segment("At Platform", "B Station", 0, "victoria")
+    assert seg == fetch.Segment("B Station", "B Station", 1.0)
+
+
+def test_resolve_segment_empty_location_snaps_for_no_location_lines():
+    seg = fetch.resolve_segment("", "B Station", 45, "dlr")
+    assert seg == fetch.Segment("B Station", "B Station", 1.0)
+
+
+def test_resolve_segment_empty_location_unresolved_for_other_lines():
+    # Only dlr/london-overground/tram/elizabeth report no location text at all.
+    assert fetch.resolve_segment("", "B Station", 45, "victoria") is None
+
+
+def test_resolve_segment_leaving_computes_fraction_toward_destination():
+    # canon_station_name appends " Station" to the regex-extracted departure name.
+    seg = fetch.resolve_segment("Leaving A", "B Station", 30, "victoria")
+    assert seg.from_station == "A Station"
+    assert seg.to_station == "B Station"
+    assert seg.fraction == pytest.approx(30 / 60)
+
+
+def test_resolve_segment_between_uses_180s_floor_when_time_below_150():
+    seg = fetch.resolve_segment("Between A and B", "B Station", 90, "victoria")
+    assert seg.from_station == "A Station"
+    assert seg.to_station == "B Station"
+    assert seg.fraction == pytest.approx((180 - 90) / 180)
+
+
+def test_resolve_segment_between_uses_time_plus_30_when_time_above_150():
+    seg = fetch.resolve_segment("Between A and B", "B Station", 200, "victoria")
+    assert seg.fraction == pytest.approx((230 - 200) / 230)
+
+
+def test_resolve_segment_between_skips_h_line_mismatch():
+    """Regression: on the H&C line, a 'Between' report whose second station doesn't
+    match the arrival station_name is discarded rather than plotted wrong."""
+    assert fetch.resolve_segment("Between A and Other", "B Station", 90, "H") is None
+
+
+def test_resolve_segment_approaching_snaps_to_the_approached_station():
+    seg = fetch.resolve_segment("Approaching B", "B Station", 30, "victoria")
+    assert seg == fetch.Segment("B Station", "B Station", 1.0)
+
+
+def test_resolve_segment_unrecognised_text_returns_none():
+    assert fetch.resolve_segment("Some new TfL wording", "B Station", 30, "victoria") is None
+
+
+# --------------------------------------------------------------------------
 # fetch_line — caching and error handling
 # --------------------------------------------------------------------------
 
@@ -363,8 +418,36 @@ def test_fetch_writes_both_output_files(frozen_cache, tmp_path, monkeypatch):
 
     assert (out_dir / "london.json").is_file()
     assert (out_dir / "london-text.json").is_file()
-    # The atomic-write temp file must not be left behind.
+    assert (out_dir / "train-positions.json").is_file()
+    # The atomic-write temp files must not be left behind.
     assert not (out_dir / "london.jsonN").exists()
+    assert not (out_dir / "train-positions.jsonN").exists()
+
+
+def test_train_positions_json_has_the_shared_position_contract(frozen_cache, tmp_path, monkeypatch):
+    """The frontend (either rendering mode) depends on this shape."""
+    out_dir = tmp_path / "data"
+    _run(frozen_cache, out_dir, monkeypatch)
+
+    data = json.loads((out_dir / "train-positions.json").read_text(encoding="utf-8"))
+    assert set(data) == {"updatedAt", "trains"}
+    assert data["trains"], "expected at least one train from the fixture cache"
+
+    train = data["trains"][0]
+    assert set(train) == {
+        "id", "lineId", "vehicleId", "destination",
+        "fromStation", "toStation", "fraction", "etaSeconds", "atPlatform",
+    }
+    assert 0.0 <= train["fraction"] <= 1.0
+    assert isinstance(train["atPlatform"], bool)
+
+
+def test_train_positions_omits_siding_trains_like_the_map_does(frozen_cache, tmp_path, monkeypatch):
+    out_dir = tmp_path / "data"
+    _run(frozen_cache, out_dir, monkeypatch)
+
+    positions = json.loads((out_dir / "train-positions.json").read_text(encoding="utf-8"))
+    assert not any(t["id"].startswith("victoria-105") for t in positions["trains"])
 
 
 def test_london_json_matches_golden(frozen_cache, tmp_path, monkeypatch):

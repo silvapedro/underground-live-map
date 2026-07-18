@@ -15,24 +15,23 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pyapp.services.accessible import STOPS, fetch_accessible_predictions
 from pyapp.services.textual import group_rows_by_line, load_textual_rows
-from pyapp.services.tube_live import get_cached_positions, refresh_tube_live
+from pyapp.services.tube_positions import get_live_trains
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
 FETCH_SCRIPT = REPO_ROOT / "bin" / "fetch.py"
 
-# How often (seconds) to refresh london.json.
-DATA_REFRESH_INTERVAL = 60
-
-# How often (seconds) to refresh the canvas live-feed cache.
-TUBE_LIVE_REFRESH_INTERVAL = 30
+# How often (seconds) to refresh london.json / train-positions.json. fetch.py's own
+# per-line disk cache has a 100s TTL, so most of these refreshes are cache hits and
+# don't add extra TfL API calls -- they just get fresher data into the frontend sooner.
+DATA_REFRESH_INTERVAL = 30
 
 # Directories at the repo root that are safe to expose as static assets.
 PUBLIC_STATIC_DIRS = ("lib", "js", "i", "data", "schematic", "skyfall")
@@ -75,29 +74,17 @@ async def _refresh_loop() -> None:
         await _fetch_data()
 
 
-async def _tube_live_loop() -> None:
-    """Background task: keep the canvas live-feed cache warm every 30 s."""
-    app_key = os.environ.get("TFL_APP_KEY", "")
-    await refresh_tube_live(app_key)
-    while True:
-        await asyncio.sleep(TUBE_LIVE_REFRESH_INTERVAL)
-        app_key = os.environ.get("TFL_APP_KEY", "")
-        await refresh_tube_live(app_key)
-
-
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     task = asyncio.create_task(_refresh_loop())
-    tube_task = asyncio.create_task(_tube_live_loop())
     try:
         yield
     finally:
-        for t in (task, tube_task):
-            t.cancel()
-            try:
-                await t
-            except asyncio.CancelledError:
-                pass
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="underground-live-map Python runtime", lifespan=lifespan)
@@ -151,16 +138,18 @@ def accessible_view(request: Request, stop: str | None = None):
     )
 
 
-@app.get("/api/tube/trains", tags=["live-feed"])
-def tube_trains_api():
+@app.get("/api/trains", tags=["live-feed"])
+def trains_api():
     """
-    Return cached train positions for the TubeLiveMap canvas component.
+    Return the latest live train positions for every line/service.
 
-    Each train has: vehicleId, lineId, g (fractional station-index position),
-    dir (+1 forward / -1 reverse). The cache is refreshed every 30 s by a
-    background task; stale=true if the last refresh was more than 90 s ago.
+    Each train carries {id, lineId, vehicleId, destination, fromStation, toStation,
+    fraction, etaSeconds, atPlatform} -- a coordinate-free position that either
+    rendering mode (geographic or schematic) resolves into pixels itself. Backed by
+    data/train-positions.json, which bin/fetch.py's subprocess rewrites every
+    DATA_REFRESH_INTERVAL seconds; stale=true if that file is more than 90s old.
     """
-    data = get_cached_positions()
+    data = get_live_trains(DATA_DIR)
     age = time.time() - data["updated_at"] if data["updated_at"] else float("inf")
     response = JSONResponse(
         {

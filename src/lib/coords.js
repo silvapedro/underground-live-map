@@ -32,11 +32,23 @@ export function extrapolateFraction(train, nowMs) {
   return Math.min(1, train.fraction + rate * elapsedSeconds);
 }
 
-/** Resolve a train's current real-world [lat, lng], or null if either station is unknown. */
-export function resolveGeoPoint(geoStations, train, nowMs) {
-  const from = lookupStationPoint(geoStations, train.fromStation, train.lineId);
-  const to = lookupStationPoint(geoStations, train.toStation, train.lineId);
+/** Resolve a train's position in an arbitrary 2D coordinate table (geo or schematic),
+ * or null if either station is unknown there. Both tables share the same shape:
+ * {"Station Name": {lineId: [a, b], "*": [a, b]}}. */
+function resolvePoint(stationTable, train, nowMs) {
+  const from = lookupStationPoint(stationTable, train.fromStation, train.lineId);
+  const to = lookupStationPoint(stationTable, train.toStation, train.lineId);
   if (!from || !to) return null;
   const fraction = extrapolateFraction(train, nowMs);
   return lerp(from, to, fraction);
+}
+
+/** Resolve a train's current real-world [lat, lng], or null if either station is unknown. */
+export function resolveGeoPoint(geoStations, train, nowMs) {
+  return resolvePoint(geoStations, train, nowMs);
+}
+
+/** Resolve a train's current schematic [x, y] (SVG viewBox units), or null if unknown. */
+export function resolveSchematicPoint(schematicStations, train, nowMs) {
+  return resolvePoint(schematicStations, train, nowMs);
 }

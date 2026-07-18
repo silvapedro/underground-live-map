@@ -27,7 +27,10 @@ export default function ModeSwitcher({ mode, onChange }) {
       <button style={buttonStyle(mode === "geo", false)} onClick={() => onChange("geo")}>
         Geographic
       </button>
-      <button style={buttonStyle(false, true)} disabled title="Coming soon">
+      <button
+        style={buttonStyle(mode === "schematic", false)}
+        onClick={() => onChange("schematic")}
+      >
         Schematic
       </button>
     </div>

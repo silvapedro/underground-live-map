@@ -52,7 +52,10 @@ def test_canon_station_name_appends_tram_stop_for_tram():
     assert fetch.canon_station_name("Addiscombe", "tram") == "Addiscombe Tram Stop"
 
 
-@pytest.mark.parametrize("line", ["dlr", "elizabeth", "london-overground"])
+@pytest.mark.parametrize(
+    "line", ["dlr", "elizabeth", "liberty", "lioness", "mildmay",
+             "suffragette", "weaver", "windrush"]
+)
 def test_canon_station_name_no_suffix_for_dlr_overground_elizabeth(line):
     assert fetch.canon_station_name("Abbey Road", line) == "Abbey Road"
 
@@ -147,6 +150,18 @@ def test_resolve_segment_approaching_snaps_to_the_approached_station():
 
 def test_resolve_segment_unrecognised_text_returns_none():
     assert fetch.resolve_segment("Some new TfL wording", "B Station", 30, "victoria") is None
+
+
+@pytest.mark.parametrize(
+    "line", ["liberty", "lioness", "mildmay", "suffragette", "weaver", "windrush"]
+)
+def test_resolve_segment_empty_location_snaps_for_every_overground_line(line):
+    """Regression: TfL reports no currentLocation text at all for these 6 lines (same
+    as dlr/elizabeth), but they were missing from the empty-location check, so every
+    Overground train was silently dropped from train-positions.json."""
+    assert fetch.resolve_segment("", "B Station", 45, line) == fetch.Segment(
+        "B Station", "B Station", 1.0
+    )
 
 
 # --------------------------------------------------------------------------

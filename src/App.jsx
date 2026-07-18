@@ -1,8 +1,23 @@
 import { useState } from "react";
 import GeoMap from "./components/GeoMap.jsx";
+import SchematicMap from "./components/SchematicMap.jsx";
 import ModeSwitcher from "./components/ModeSwitcher.jsx";
 import LineLegend from "./components/LineLegend.jsx";
 import { useTrainPositions } from "./hooks/useTrainPositions.js";
+
+// Both renderers stay mounted always and crossfade via opacity, rather than being
+// conditionally rendered: switching modes can't geometrically morph across a
+// WebGL-canvas/SVG boundary (see src/lib/coords.js), so instead both keep animating
+// live underneath and the mode switch just fades between them.
+function fadeStyle(active) {
+  return {
+    position: "absolute",
+    inset: 0,
+    opacity: active ? 1 : 0,
+    pointerEvents: active ? "auto" : "none",
+    transition: "opacity 400ms ease",
+  };
+}
 
 const STATUS_LABEL = {
   connecting: "connecting…",
@@ -68,7 +83,12 @@ export default function App() {
       </header>
 
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-        {mode === "geo" && <GeoMap />}
+        <div style={fadeStyle(mode === "geo")}>
+          <GeoMap />
+        </div>
+        <div style={fadeStyle(mode === "schematic")}>
+          <SchematicMap />
+        </div>
       </div>
 
       <footer style={{ borderTop: "1px solid #161f33" }}>

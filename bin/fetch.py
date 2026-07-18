@@ -82,6 +82,13 @@ LINES = {
     "waterloo-city": "Waterloo & City",
 }
 
+# The 6 London Overground lines (2024 rename). TfL's API reports no currentLocation
+# text at all for these -- same as DLR/Elizabeth -- and their station names ("Emerson
+# Park Rail Station") already carry their own suffix, so they take no extra one either.
+OVERGROUND_LINES = frozenset({
+    "liberty", "lioness", "mildmay", "suffragette", "weaver", "windrush",
+})
+
 # Single-letter line keys used in stations.json -> full line names.
 LINE_ABBREVIATIONS = {
     "B": "bakerloo",
@@ -147,7 +154,7 @@ def canon_station_name(s: str, line: str) -> str:
 
     if line == "tram":
         s = s + " Tram Stop"
-    elif line in ("dlr", "london-overground", "elizabeth"):
+    elif line in ("dlr", "elizabeth") or line in OVERGROUND_LINES:
         pass
     else:
         s = s + " Station"
@@ -445,7 +452,7 @@ def resolve_segment(current: str, station_name: str, seconds: int, line: str) ->
         return Segment(station_name, station_name, 1.0)
 
     # These lines report no location at all; place at the next station.
-    if not current and line in ("dlr", "london-overground", "tram", "elizabeth"):
+    if not current and (line in ("dlr", "tram", "elizabeth") or line in OVERGROUND_LINES):
         return Segment(station_name, station_name, 1.0)
 
     # Departed a named station, heading to station_name.

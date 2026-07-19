@@ -2,17 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { TripsLayer } from "@deck.gl/geo-layers";
 
 import geoStations from "../data/geo-stations.json";
+import lineSequences from "../data/line-sequences.json";
 import lineColors from "../data/line-colors.json";
-import { resolveGeoPoint } from "../lib/coords";
+import { lookupStationPoint, resolveGeoPoint } from "../lib/coords";
 import { getTrains } from "../lib/trainStore";
 import TrainTooltip from "./TrainTooltip.jsx";
 
 // No API token/signup required: https://tiles.openfreemap.org
-const STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+// "liberty" (not "dark") -- the fully-black basemap made the (officially black)
+// Northern line invisible, and liberty ships a ready-to-use 3D buildings layer
+// (fill-extrusion, auto-enabled above zoom 14 -- tilt the map to see it).
+const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const INITIAL_CENTER = [-0.1276, 51.5074]; // central London
 const INITIAL_ZOOM = 10.2;
 
@@ -33,6 +37,23 @@ const LINE_RGB = Object.fromEntries(
   Object.entries(lineColors).map(([lineId, hex]) => [lineId, hexToRgb(hex)]),
 );
 const FALLBACK_RGB = [200, 200, 200];
+
+/** Each line's branches as real-world [lng, lat] paths, resolved once -- station
+ * order and coordinates don't change at runtime. Mirrors SchematicMap's line-path
+ * construction, against geo-stations.json instead of schematic-stations.json. */
+function buildGeoLinePaths() {
+  const paths = [];
+  for (const [lineId, { branches }] of Object.entries(lineSequences)) {
+    for (const branch of branches) {
+      const path = branch
+        .map((name) => lookupStationPoint(geoStations, name, lineId))
+        .filter(Boolean)
+        .map(([lat, lng]) => [lng, lat]); // deck.gl wants [lng, lat]
+      if (path.length >= 2) paths.push({ lineId, path });
+    }
+  }
+  return paths;
+}
 
 export default function GeoMap({ visibleLines }) {
   const containerRef = useRef(null);
@@ -69,6 +90,7 @@ export default function GeoMap({ visibleLines }) {
     // trainId -> [[lng, lat, tSeconds], ...], trimmed to the last TRAIL_SECONDS.
     const trails = new Map();
     let lastSampleMs = 0;
+    const geoLinePaths = buildGeoLinePaths();
 
     const overlay = new MapboxOverlay({
       interleaved: true,
@@ -104,11 +126,15 @@ export default function GeoMap({ visibleLines }) {
         seenIds.add(train.id);
 
         if (sampleTrail) {
-          const history = trails.get(train.id) ?? [];
-          history.push([lngLat[0], lngLat[1], nowS]);
+          // lineId travels with the trail itself so its colour survives frames where
+          // the owning train briefly drops out of `positioned` (e.g. a visibility
+          // toggle mid-fade) -- looking lineId up from the current frame's trains
+          // only made a just-hidden trail's tail flash the grey fallback colour.
+          const entry = trails.get(train.id) ?? { lineId: train.lineId, path: [] };
+          entry.path.push([lngLat[0], lngLat[1], nowS]);
           const cutoff = nowS - TRAIL_SECONDS;
-          while (history.length > 1 && history[0][2] < cutoff) history.shift();
-          trails.set(train.id, history);
+          while (entry.path.length > 1 && entry.path[0][2] < cutoff) entry.path.shift();
+          trails.set(train.id, entry);
         }
       }
       for (const id of trails.keys()) {
@@ -116,17 +142,16 @@ export default function GeoMap({ visibleLines }) {
       }
 
       const trailData = [];
-      for (const [id, path] of trails) {
-        if (path.length >= 2) trailData.push({ id, path });
+      for (const { lineId, path } of trails.values()) {
+        if (path.length >= 2) trailData.push({ lineId, path });
       }
-      const idToLineId = new Map(positioned.map((d) => [d.train.id, d.train.lineId]));
 
       const tripsLayer = new TripsLayer({
         id: "trails",
         data: trailData,
         getPath: (d) => d.path,
         getTimestamps: (d) => d.path.map((p) => p[2]),
-        getColor: (d) => LINE_RGB[idToLineId.get(d.id)] ?? FALLBACK_RGB,
+        getColor: (d) => LINE_RGB[d.lineId] ?? FALLBACK_RGB,
         currentTime: nowS,
         trailLength: TRAIL_SECONDS,
         fadeTrail: true,
@@ -145,12 +170,31 @@ export default function GeoMap({ visibleLines }) {
         getRadius: 5,
         getFillColor: (d) => LINE_RGB[d.train.lineId] ?? FALLBACK_RGB,
         getPosition: (d) => d.lngLat,
+        // A white outline keeps dark line colours (Northern's official black, DLR-ish
+        // dark teal) visible against any basemap, light or dark.
+        stroked: true,
+        getLineColor: [255, 255, 255],
+        lineWidthUnits: "pixels",
+        getLineWidth: 1,
         // Forces deck.gl to re-read positions every frame -- they change continuously
         // via client-side extrapolation, not just when a new poll lands.
         updateTriggers: { getPosition: now },
       });
 
-      overlay.setProps({ layers: [tripsLayer, scatterLayer] });
+      const linesLayer = new PathLayer({
+        id: "tube-lines",
+        data: geoLinePaths.filter((p) => visibleLinesRef.current.has(p.lineId)),
+        getPath: (d) => d.path,
+        getColor: (d) => [...(LINE_RGB[d.lineId] ?? FALLBACK_RGB), 170],
+        getWidth: 2.5,
+        widthUnits: "pixels",
+        widthMinPixels: 2,
+        capRounded: true,
+        jointRounded: true,
+      });
+
+      // Draw order: tracks underneath, then fading trails, then the train dots on top.
+      overlay.setProps({ layers: [linesLayer, tripsLayer, scatterLayer] });
 
       const activeId = lockedIdRef.current ?? hoveredIdRef.current;
       const active = activeId != null ? positioned.find((d) => d.train.id === activeId) : null;

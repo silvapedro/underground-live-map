@@ -10,6 +10,14 @@ const MAX_MISSED_POLLS = 3;
 
 let trains = [];
 let feedStatus = "connecting"; // "connecting" | "live" | "stale" | "error"
+// Diagnostics for the debug panel, updated on every poll.
+let diagnostics = {
+  lastPollAtMs: 0, // when the client last completed a poll
+  serverUpdatedAt: 0, // updatedAt from the payload (epoch seconds)
+  pollCount: 0,
+  lastError: null,
+  lastTrainCount: 0,
+};
 const listeners = new Set();
 
 function notify() {
@@ -27,6 +35,23 @@ export function getTrains() {
 
 export function getFeedStatus() {
   return feedStatus;
+}
+
+export function getDiagnostics() {
+  return diagnostics;
+}
+
+/** Record poll metadata for the debug panel. Replaces the object (new identity) so
+ * useSyncExternalStore sees a change. */
+export function recordPoll({ serverUpdatedAt, error, trainCount }) {
+  diagnostics = {
+    lastPollAtMs: Date.now(),
+    serverUpdatedAt: serverUpdatedAt ?? diagnostics.serverUpdatedAt,
+    pollCount: diagnostics.pollCount + 1,
+    lastError: error ?? null,
+    lastTrainCount: trainCount ?? diagnostics.lastTrainCount,
+  };
+  notify();
 }
 
 /**

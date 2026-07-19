@@ -3,6 +3,7 @@ import GeoMap from "./components/GeoMap.jsx";
 import SchematicMap from "./components/SchematicMap.jsx";
 import ModeSwitcher from "./components/ModeSwitcher.jsx";
 import LineLegend from "./components/LineLegend.jsx";
+import DebugPanel from "./components/DebugPanel.jsx";
 import { useTrainPositions } from "./hooks/useTrainPositions.js";
 import { loadVisibleLines, saveVisibleLines } from "./lib/lineVisibility.js";
 
@@ -37,7 +38,7 @@ const STATUS_COLOR = {
 export default function App() {
   const [mode, setMode] = useState("geo");
   const [visibleLines, setVisibleLines] = useState(loadVisibleLines);
-  const { trains, feedStatus } = useTrainPositions();
+  const { trains, feedStatus, diagnostics } = useTrainPositions();
 
   const toggleLine = useCallback((lineId) => {
     setVisibleLines((prev) => {
@@ -100,6 +101,12 @@ export default function App() {
       </header>
 
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <DebugPanel
+          trains={trains}
+          visibleLines={visibleLines}
+          feedStatus={feedStatus}
+          diagnostics={diagnostics}
+        />
         <div style={fadeStyle(mode === "geo")}>
           <GeoMap visibleLines={visibleLines} />
         </div>

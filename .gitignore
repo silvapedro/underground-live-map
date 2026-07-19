@@ -8,3 +8,7 @@ bin/cache
 /tfwm/bin/config.py
 .vite
 node_modules
+.claude
+.claude/skills
+.agents
+.agents/skills

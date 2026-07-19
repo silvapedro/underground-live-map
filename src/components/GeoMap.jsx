@@ -17,6 +17,7 @@ import {
 import { createMotionSmoother } from "../lib/motion";
 import { getTrains } from "../lib/trainStore";
 import TrainTooltip from "./TrainTooltip.jsx";
+import StationBoard from "./StationBoard.jsx";
 
 // No API token/signup required: https://tiles.openfreemap.org
 // "liberty" (not "dark") -- the fully-black basemap made the (officially black)
@@ -61,9 +62,21 @@ function buildGeoLinePaths() {
   return paths;
 }
 
+/** One pickable dot per station: {name, position:[lng,lat]}. Built once. */
+function buildGeoStationData() {
+  const out = [];
+  for (const [name, keys] of Object.entries(geoStations)) {
+    const latlng = keys["*"] ?? Object.values(keys)[0];
+    if (latlng) out.push({ name, position: [latlng[1], latlng[0]] });
+  }
+  return out;
+}
+const GEO_STATION_DATA = buildGeoStationData();
+
 export default function GeoMap({ visibleLines }) {
   const containerRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+  const [stationInfo, setStationInfo] = useState(null);
 
   // The map-setup effect below mounts once ([] deps); it reads visibility through this
   // ref, kept in sync by a separate effect, rather than depending on the prop directly
@@ -107,9 +120,26 @@ export default function GeoMap({ visibleLines }) {
       interleaved: true,
       layers: [],
       onHover: (info) => {
-        hoveredIdRef.current = info.object?.train.id ?? null;
+        // Topmost pickable layer wins: trains sit above stations, so hovering a train
+        // picks the train; hovering elsewhere near a station picks the station board.
+        if (info.layer?.id === "trains") {
+          hoveredIdRef.current = info.object?.train.id ?? null;
+          setStationInfo(null);
+        } else if (info.layer?.id === "stations" && info.object) {
+          hoveredIdRef.current = null;
+          setStationInfo({
+            name: info.object.name,
+            x: info.x,
+            y: info.y,
+            containerWidth: containerRef.current?.clientWidth,
+          });
+        } else {
+          hoveredIdRef.current = null;
+          setStationInfo((prev) => (prev ? null : prev));
+        }
       },
       onClick: (info) => {
+        if (info.layer?.id !== "trains") return;
         const id = info.object?.train.id ?? null;
         lockedIdRef.current = lockedIdRef.current === id ? null : id;
       },
@@ -253,9 +283,28 @@ export default function GeoMap({ visibleLines }) {
         jointRounded: true,
       });
 
-      // Draw order: track glow, tracks, fading trails, halo, dots, heading arrows.
+      // Station dots: pickable hit-targets for the arrivals board. Kept subtle so they
+      // don't fight the basemap's own labels; only shown from a moderate zoom in.
+      const showStations = map.getZoom() >= 12;
+      const stationLayer = new ScatterplotLayer({
+        id: "stations",
+        data: showStations ? GEO_STATION_DATA : [],
+        pickable: true,
+        radiusUnits: "pixels",
+        getRadius: 3.5,
+        radiusMinPixels: 2,
+        getPosition: (d) => d.position,
+        getFillColor: [255, 255, 255, 200],
+        stroked: true,
+        getLineColor: [20, 28, 46, 220],
+        lineWidthUnits: "pixels",
+        getLineWidth: 1,
+      });
+
+      // Draw order: track glow, tracks, stations, trails, halo, dots, heading arrows.
+      // Stations sit below trains so a train under the cursor is picked first.
       overlay.setProps({
-        layers: [linesGlowLayer, linesLayer, tripsLayer, glowLayer, scatterLayer, arrowLayer],
+        layers: [linesGlowLayer, linesLayer, stationLayer, tripsLayer, glowLayer, scatterLayer, arrowLayer],
       });
 
       const activeId = lockedIdRef.current ?? hoveredIdRef.current;
@@ -288,6 +337,7 @@ export default function GeoMap({ visibleLines }) {
   return (
     <div ref={containerRef} style={{ position: "absolute", inset: 0 }}>
       <TrainTooltip info={tooltip} />
+      {!tooltip && <StationBoard info={stationInfo} />}
     </div>
   );
 }

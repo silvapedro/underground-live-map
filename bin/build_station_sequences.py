@@ -48,25 +48,28 @@ def _canon_name(raw_name: str, line_id: str) -> str:
     return canon_station_name(raw_name, line_id)
 
 
-def _dedupe_routes(routes: list[dict]) -> list[dict]:
-    """Drop reverse-direction duplicates: same physical branch, opposite order.
-
-    'via Bank' and 'via Charing Cross' (etc.) are kept as distinct branches --
-    their naptanIds genuinely differ -- only exact A->B / B->A reverses collapse.
-    """
+def _dedupe_branches(branches: list[list[str]]) -> list[list[str]]:
+    """Drop reverse-direction duplicates: same set of stops, opposite order."""
     seen: set[tuple[str, ...]] = set()
     unique = []
-    for route in routes:
-        key = tuple(sorted(route.get("naptanIds", [])))
+    for names in branches:
+        key = tuple(sorted(names))
         if not key or key in seen:
             continue
         seen.add(key)
-        unique.append(route)
+        unique.append(names)
     return unique
 
 
 def fetch_line_sequence(line_id: str, api: str) -> list[list[str]]:
-    """Return each branch as an ordered list of canonicalised station names."""
+    """Return each branch as an ordered list of canonicalised station names.
+
+    Uses stopPointSequences[].stopPoint[], which carries the full ordered stop list
+    with names inline. The orderedLineRoutes + top-level `stations` lookup we used
+    before is incomplete for several Overground/Elizabeth lines -- `stations` there
+    holds only a subset (interchanges), so stops missing from it were silently
+    dropped, producing short jumbled branches.
+    """
     for attempt in range(1, 4):
         try:
             raw = urllib.request.urlopen(api % line_id, timeout=15).read()
@@ -82,18 +85,15 @@ def fetch_line_sequence(line_id: str, api: str) -> list[list[str]]:
             return []
 
     data = json.loads(raw)
-    stations_by_id = {s["id"]: s["name"] for s in data.get("stations", [])}
 
     branches = []
-    for route in _dedupe_routes(data.get("orderedLineRoutes", [])):
-        names = [
-            _canon_name(stations_by_id[naptan_id], line_id)
-            for naptan_id in route["naptanIds"]
-            if naptan_id in stations_by_id
-        ]
-        if len(names) >= 2:
-            branches.append(names)
-    return branches
+    for seq in data.get("stopPointSequences", []):
+        names = [_canon_name(sp["name"], line_id) for sp in seq.get("stopPoint", []) if sp.get("name")]
+        # Collapse consecutive dupes (loops can repeat a stop) but keep order.
+        deduped = [n for k, n in enumerate(names) if k == 0 or n != names[k - 1]]
+        if len(deduped) >= 2:
+            branches.append(deduped)
+    return _dedupe_branches(branches)
 
 
 def main() -> int:

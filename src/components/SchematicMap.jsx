@@ -16,6 +16,7 @@ import {
 import { createMotionSmoother } from "../lib/motion";
 import { getTrains } from "../lib/trainStore";
 import TrainTooltip from "./TrainTooltip.jsx";
+import StationBoard from "./StationBoard.jsx";
 
 // viewBox height is derived (not guessed) from the network's true aspect ratio --
 // see bin/build_schematic_layout.py -- so the diagram fills the canvas on both axes.
@@ -46,6 +47,7 @@ export default function SchematicMap({ visibleLines }) {
   const zoomGroupRef = useRef(null);
   const trainsGroupRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+  const [stationInfo, setStationInfo] = useState(null);
 
   // The animation-loop effect below mounts once ([] deps); it reads visibility through
   // this ref, kept in sync separately, rather than restarting the loop on every toggle.
@@ -64,6 +66,23 @@ export default function SchematicMap({ visibleLines }) {
       ]),
     [],
   );
+
+  // Approximate fare-zone rings: concentric circles centred on the network centroid,
+  // for spatial context on an otherwise empty dark backdrop. Not the real (irregular)
+  // zone boundaries -- a legibility aid, hence "~Zone N".
+  const zones = useMemo(() => {
+    const pts = stationPoints.map(([, p]) => p);
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const dists = pts.map((p) => Math.hypot(p[0] - cx, p[1] - cy)).sort((a, b) => a - b);
+    const maxR = dists[Math.floor(dists.length * 0.96)]; // clip a few far outliers
+    const N = 6;
+    return {
+      cx,
+      cy,
+      rings: Array.from({ length: N }, (_, i) => ({ r: (maxR * (i + 1)) / N, zone: i + 1 })),
+    };
+  }, [stationPoints]);
 
   // Pan/zoom: d3-zoom drives a transform on the inner <g>, React never re-renders for it.
   const zoomScaleRef = useRef(1);
@@ -209,24 +228,102 @@ export default function SchematicMap({ visibleLines }) {
     return bestId;
   }
 
+  function nearestStationName(clientX, clientY) {
+    if (!svgRef.current || !zoomGroupRef.current) return null;
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const local = pt.matrixTransform(zoomGroupRef.current.getScreenCTM().inverse());
+    const radius = HOVER_RADIUS_PX / zoomScaleRef.current;
+
+    let bestName = null;
+    let bestDistSq = radius * radius;
+    for (const [name, [x, y]] of stationPoints) {
+      const dx = x - local.x;
+      const dy = y - local.y;
+      const distSq = dx * dx + dy * dy;
+      if (distSq < bestDistSq) {
+        bestDistSq = distSq;
+        bestName = name;
+      }
+    }
+    return bestName;
+  }
+
+  // Train hover wins; if no train is near, fall back to the station board.
+  function onMove(e) {
+    const trainId = nearestTrainId(e.clientX, e.clientY);
+    hoveredIdRef.current = trainId;
+    if (trainId) {
+      if (stationInfo) setStationInfo(null);
+      return;
+    }
+    const name = nearestStationName(e.clientX, e.clientY);
+    if (!name) {
+      if (stationInfo) setStationInfo(null);
+    } else {
+      const rect = containerRef.current.getBoundingClientRect();
+      setStationInfo({
+        name,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        containerWidth: rect.width,
+      });
+    }
+  }
+
   return (
     <div ref={containerRef} style={{ position: "absolute", inset: 0 }}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        style={{ width: "100%", height: "100%", background: "#0A0D16", display: "block" }}
-        onMouseMove={(e) => {
-          hoveredIdRef.current = nearestTrainId(e.clientX, e.clientY);
-        }}
+        style={{ width: "100%", height: "100%", display: "block" }}
+        onMouseMove={onMove}
         onMouseLeave={() => {
           hoveredIdRef.current = null;
+          setStationInfo(null);
         }}
         onClick={(e) => {
           const id = nearestTrainId(e.clientX, e.clientY);
           lockedIdRef.current = lockedIdRef.current === id ? null : id;
         }}
       >
+        <defs>
+          {/* Lighter-than-black radial backdrop -- the flat near-black was too dark to
+              read the network against. */}
+          <radialGradient id="schem-bg" cx="50%" cy="50%" r="75%">
+            <stop offset="0%" stopColor="#232c44" />
+            <stop offset="100%" stopColor="#0e1424" />
+          </radialGradient>
+        </defs>
+        <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="url(#schem-bg)" />
         <g ref={zoomGroupRef}>
+          {/* Fare-zone rings (approximate), behind everything else. */}
+          {zones.rings.map(({ r, zone }) => (
+            <g key={zone}>
+              <circle
+                cx={zones.cx}
+                cy={zones.cy}
+                r={r}
+                fill="none"
+                stroke="#3b455f"
+                strokeWidth={1}
+                strokeDasharray="3 5"
+                opacity={0.5}
+                vectorEffect="non-scaling-stroke"
+              />
+              <text
+                x={zones.cx}
+                y={zones.cy - r + 3}
+                fill="#6b7688"
+                fontSize={7}
+                textAnchor="middle"
+                opacity={0.6}
+              >
+                {`Zone ${zone}`}
+              </text>
+            </g>
+          ))}
           {/* vector-effect: non-scaling-stroke keeps every width in SCREEN pixels, so
               zooming in doesn't balloon lines and glow into giant blobs. */}
           {/* Wide low-opacity underlay first: the soft glow beneath every line. */}
@@ -272,6 +369,7 @@ export default function SchematicMap({ visibleLines }) {
         </g>
       </svg>
       <TrainTooltip info={tooltip} />
+      {!tooltip && <StationBoard info={stationInfo} />}
     </div>
   );
 }

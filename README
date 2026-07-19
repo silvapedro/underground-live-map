@@ -39,6 +39,15 @@ Runtime notes
   at `/`. `pyapp/app.py` auto-refreshes tube data in the background using `bin/fetch.py` (every 30
   seconds) and exposes it at `/api/trains`. Set the `TFL_APP_KEY` environment variable before starting
   uvicorn for live data.
+* Two view modes, switchable from the header: Geographic (real map, comet-trailed trains) and
+  Schematic (Beck-diagram-style network, `src/data/line-sequences.json` +
+  `src/data/schematic-stations.json`). Both read the same live feed.
+* Click a line in the footer legend to show/hide it on both views; the choice is remembered in the
+  browser's `localStorage`. The Overground lines and Elizabeth line are hidden by default.
+* Data-prep scripts in `bin/` (`build_geo_stations.py`, `build_station_sequences.py`,
+  `build_schematic_layout.py`) regenerate the committed `src/data/*.json` files from
+  `bin/stations.json`/`bin/stations-schematic.json` and the TfL API. Only need re-running if that
+  source data changes (line closures, extensions, etc.) -- not part of normal operation.
 * This project is London Underground only. The London bus and West Midlands (TfWM)
   maps were removed; see `plans/tube-only-fetch-modernisation.md`.
 * Two independent, self-contained routes remain from the earlier PHP migration:

@@ -16,6 +16,17 @@ export function lerp(a, b, t) {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
+/** True once per session unless the OS setting changes; cheap enough to call per frame,
+ * but memoized anyway since matchMedia() allocates. */
+let _reducedMotion = null;
+export function prefersReducedMotion() {
+  if (_reducedMotion === null) {
+    _reducedMotion = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  }
+  return _reducedMotion;
+}
+
 /**
  * Extrapolate a train's progress (0..1) between fromStation and toStation at `nowMs`,
  * given the fraction/etaSeconds/receivedAtMs snapshot from its last poll.
@@ -24,9 +35,14 @@ export function lerp(a, b, t) {
  * derived as (1 - fraction) / etaSeconds. Once a train reaches its next station
  * (extrapolated fraction hits 1), it holds there until the next poll supplies a new
  * segment; Phase 2 has no line-topology data yet to guess what comes after toStation.
+ *
+ * Under prefers-reduced-motion, skip the continuous per-frame extrapolation entirely --
+ * trains only move when a new poll actually lands, rather than gliding every frame.
  */
 export function extrapolateFraction(train, nowMs) {
-  if (train.fraction >= 1 || train.etaSeconds <= 0) return 1;
+  if (train.fraction >= 1 || train.etaSeconds <= 0 || prefersReducedMotion()) {
+    return train.fraction;
+  }
   const elapsedSeconds = (nowMs - train.receivedAtMs) / 1000;
   const rate = (1 - train.fraction) / train.etaSeconds; // fraction progress per second
   return Math.min(1, train.fraction + rate * elapsedSeconds);

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.7",
+    "@deck.gl/geo-layers": "^9.3.7",
     "@deck.gl/layers": "^9.3.7",
     "@deck.gl/mapbox": "^9.3.7",
     "d3-scale": "^4.0.2",

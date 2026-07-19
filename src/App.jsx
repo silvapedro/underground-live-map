@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import GeoMap from "./components/GeoMap.jsx";
 import SchematicMap from "./components/SchematicMap.jsx";
 import ModeSwitcher from "./components/ModeSwitcher.jsx";
 import LineLegend from "./components/LineLegend.jsx";
 import { useTrainPositions } from "./hooks/useTrainPositions.js";
+import { loadVisibleLines, saveVisibleLines } from "./lib/lineVisibility.js";
 
 // Both renderers stay mounted always and crossfade via opacity, rather than being
 // conditionally rendered: switching modes can't geometrically morph across a
@@ -35,7 +36,23 @@ const STATUS_COLOR = {
 
 export default function App() {
   const [mode, setMode] = useState("geo");
+  const [visibleLines, setVisibleLines] = useState(loadVisibleLines);
   const { trains, feedStatus } = useTrainPositions();
+
+  const toggleLine = useCallback((lineId) => {
+    setVisibleLines((prev) => {
+      const next = new Set(prev);
+      if (next.has(lineId)) next.delete(lineId);
+      else next.add(lineId);
+      saveVisibleLines(next);
+      return next;
+    });
+  }, []);
+
+  const visibleTrainCount = trains.reduce(
+    (count, t) => count + (visibleLines.has(t.lineId) ? 1 : 0),
+    0,
+  );
 
   return (
     <div
@@ -74,7 +91,7 @@ export default function App() {
             Underground Live
           </span>
           <span style={{ fontSize: 11, color: STATUS_COLOR[feedStatus] }}>
-            ● {STATUS_LABEL[feedStatus]} · {trains.length} trains
+            ● {STATUS_LABEL[feedStatus]} · {visibleTrainCount} trains
           </span>
         </div>
         <div style={{ marginLeft: "auto" }}>
@@ -84,15 +101,15 @@ export default function App() {
 
       <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
         <div style={fadeStyle(mode === "geo")}>
-          <GeoMap />
+          <GeoMap visibleLines={visibleLines} />
         </div>
         <div style={fadeStyle(mode === "schematic")}>
-          <SchematicMap />
+          <SchematicMap visibleLines={visibleLines} />
         </div>
       </div>
 
       <footer style={{ borderTop: "1px solid #161f33" }}>
-        <LineLegend />
+        <LineLegend visibleLines={visibleLines} onToggle={toggleLine} />
       </footer>
     </div>
   );

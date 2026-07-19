@@ -22,7 +22,7 @@ export function createMotionSmoother({ angleEpsilon }) {
      * degrees — interpret it in the caller's own coordinate convention (y-up for
      * geo lat, y-down for SVG). null until the train has visibly moved.
      */
-    step(id, tx, ty, dtSeconds, reduceMotion) {
+    step(id, tx, ty, dtSeconds) {
       let s = state.get(id);
       if (!s) {
         s = { x: tx, y: ty, angleDeg: null };
@@ -30,15 +30,10 @@ export function createMotionSmoother({ angleEpsilon }) {
       }
       const prevX = s.x;
       const prevY = s.y;
-      if (reduceMotion) {
-        s.x = tx;
-        s.y = ty;
-      } else {
-        // ~93% convergence per second: a station-to-station snap reads as a ~1.5s glide.
-        const k = 1 - Math.pow(0.0025, dtSeconds);
-        s.x += (tx - s.x) * k;
-        s.y += (ty - s.y) * k;
-      }
+      // ~93% convergence per second: a station-to-station snap reads as a ~1.5s glide.
+      const k = 1 - Math.pow(0.0025, dtSeconds);
+      s.x += (tx - s.x) * k;
+      s.y += (ty - s.y) * k;
       const dx = s.x - prevX;
       const dy = s.y - prevY;
       if (Math.abs(dx) > angleEpsilon || Math.abs(dy) > angleEpsilon) {

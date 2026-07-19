@@ -168,7 +168,7 @@ export default function GeoMap({ visibleLines }) {
         if (!visibleLinesRef.current.has(train.lineId)) continue;
         const point = resolveGeoPoint(geoStations, train, now);
         if (!point) continue;
-        const eased = smoother.step(train.id, point[1], point[0], dtS, reduceMotion);
+        const eased = smoother.step(train.id, point[1], point[0], dtS);
         const lngLat = [eased.x, eased.y];
         // eased.angleDeg is atan2(dLat, dLng): degrees CCW from east, y-up like the map.
         positioned.push({ train, lngLat, angleDeg: eased.angleDeg });
@@ -301,14 +301,32 @@ export default function GeoMap({ visibleLines }) {
         getLineWidth: 1,
       });
 
-      // Draw order: track glow, tracks, stations, trails, halo, dots, heading arrows.
-      // Stations sit below trains so a train under the cursor is picked first.
-      overlay.setProps({
-        layers: [linesGlowLayer, linesLayer, stationLayer, tripsLayer, glowLayer, scatterLayer, arrowLayer],
-      });
-
       const activeId = lockedIdRef.current ?? hoveredIdRef.current;
       const active = activeId != null ? positioned.find((d) => d.train.id === activeId) : null;
+
+      // Highlight ring around the hovered/pinned train. When pinned it stays attached
+      // and rides along as the train glides down the line.
+      const isPinned = lockedIdRef.current != null && active;
+      const ringLayer = new ScatterplotLayer({
+        id: "active-ring",
+        data: active ? [active] : [],
+        radiusUnits: "pixels",
+        getRadius: 10,
+        stroked: true,
+        filled: false,
+        getLineColor: isPinned ? [255, 255, 255, 255] : [255, 255, 255, 150],
+        lineWidthUnits: "pixels",
+        getLineWidth: isPinned ? 2.5 : 1.5,
+        getPosition: (d) => d.lngLat,
+        updateTriggers: { getPosition: now, getLineColor: isPinned, getLineWidth: isPinned },
+      });
+
+      // Draw order: track glow, tracks, stations, trails, halo, dots, heading arrows, ring.
+      // Stations sit below trains so a train under the cursor is picked first.
+      overlay.setProps({
+        layers: [linesGlowLayer, linesLayer, stationLayer, tripsLayer, glowLayer, scatterLayer, arrowLayer, ringLayer],
+      });
+
       if (active) {
         const screen = map.project(active.lngLat);
         setTooltip({

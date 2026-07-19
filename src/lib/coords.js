@@ -62,11 +62,13 @@ export function prefersReducedMotion() {
  * (extrapolated fraction hits 1), it holds there until the next poll supplies a new
  * segment; Phase 2 has no line-topology data yet to guess what comes after toStation.
  *
- * Under prefers-reduced-motion, skip the continuous per-frame extrapolation entirely --
- * trains only move when a new poll actually lands, rather than gliding every frame.
+ * Train movement is the whole point of the map, so it is NOT gated on
+ * prefers-reduced-motion -- only the decorative pulse/glow is (see the components).
+ * Otherwise a user who has disabled OS animations (common on Windows) sees every
+ * train frozen, which looks broken rather than considerate.
  */
 export function extrapolateFraction(train, nowMs) {
-  if (train.fraction >= 1 || train.etaSeconds <= 0 || prefersReducedMotion()) {
+  if (train.fraction >= 1 || train.etaSeconds <= 0) {
     return train.fraction;
   }
   const elapsedSeconds = (nowMs - train.receivedAtMs) / 1000;
@@ -105,8 +107,8 @@ export function effectiveSegment(train, nowMs) {
   const prev = neighborToward(train.lineId, train.toStation, train.destination);
   if (!prev) return { from: train.toStation, to: train.toStation, progress: 1 };
 
-  // Static under reduced motion (uses the poll snapshot, not the ticking countdown).
-  const eta = prefersReducedMotion() ? train.etaSeconds : liveEtaSeconds(train, nowMs);
+  // Drive progress off the live countdown so the train glides in as its ETA ticks down.
+  const eta = liveEtaSeconds(train, nowMs);
   const denom = Math.max(NOMINAL_SEGMENT_S, train.etaSeconds);
   const progress = Math.min(1, Math.max(0.02, 1 - eta / denom));
   return { from: prev, to: train.toStation, progress };

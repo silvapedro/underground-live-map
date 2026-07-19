@@ -24,6 +24,10 @@ const { width: VIEW_W, height: VIEW_H } = viewBox;
 const SVG_NS = "http://www.w3.org/2000/svg";
 const HOVER_RADIUS_PX = 14; // screen pixels, converted to local units by the zoom scale
 
+// Fare-zone band fills, Zone 1 (centre, lightest) → Zone 6 (edge, darkest).
+const ZONE_FILL = ["#39456a", "#313c5c", "#2a334e", "#232b41", "#1d2436", "#171d2c"];
+
+
 const lineGenerator = d3Line();
 
 /** Each line's branches, resolved to schematic points once -- station order and
@@ -46,6 +50,7 @@ export default function SchematicMap({ visibleLines }) {
   const svgRef = useRef(null);
   const zoomGroupRef = useRef(null);
   const trainsGroupRef = useRef(null);
+  const highlightRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
   const [stationInfo, setStationInfo] = useState(null);
 
@@ -147,7 +152,7 @@ export default function SchematicMap({ visibleLines }) {
         if (!visibleLinesRef.current.has(train.lineId)) continue;
         const target = resolveSchematicPoint(schematicStations, train, now);
         if (!target) continue;
-        const eased = smoother.step(train.id, target[0], target[1], dtS, reduceMotion);
+        const eased = smoother.step(train.id, target[0], target[1], dtS);
         // eased.angleDeg is atan2(dy, dx) with SVG's y-down axis, which is exactly
         // what SVG rotate() (clockwise-positive) expects -- no conversion needed.
         positioned.push({ train, point: [eased.x, eased.y], angleDeg: eased.angleDeg });
@@ -182,6 +187,25 @@ export default function SchematicMap({ visibleLines }) {
 
       const activeId = lockedIdRef.current ?? hoveredIdRef.current;
       const active = activeId != null ? positioned.find((d) => d.train.id === activeId) : null;
+
+      // Highlight ring rides along with the hovered/pinned train (counter-scaled to
+      // stay a constant screen size, like the train nodes).
+      const ring = highlightRef.current;
+      if (ring) {
+        if (active) {
+          const pinned = lockedIdRef.current != null;
+          ring.setAttribute(
+            "transform",
+            `translate(${active.point[0]} ${active.point[1]}) scale(${invScale})`,
+          );
+          ring.setAttribute("stroke", pinned ? "#ffffff" : "rgba(255,255,255,0.6)");
+          ring.setAttribute("stroke-width", pinned ? "2" : "1.3");
+          ring.removeAttribute("display");
+        } else {
+          ring.setAttribute("display", "none");
+        }
+      }
+
       if (active && svgRef.current && zoomGroupRef.current && containerRef.current) {
         const pt = svgRef.current.createSVGPoint();
         pt.x = active.point[0];
@@ -288,41 +312,37 @@ export default function SchematicMap({ visibleLines }) {
           lockedIdRef.current = lockedIdRef.current === id ? null : id;
         }}
       >
-        <defs>
-          {/* Lighter-than-black radial backdrop -- the flat near-black was too dark to
-              read the network against. */}
-          <radialGradient id="schem-bg" cx="50%" cy="50%" r="75%">
-            <stop offset="0%" stopColor="#232c44" />
-            <stop offset="100%" stopColor="#0e1424" />
-          </radialGradient>
-        </defs>
-        <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="url(#schem-bg)" />
+        {/* Darkest base fills the whole viewport (beyond the outermost zone). */}
+        <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="#12172a" />
         <g ref={zoomGroupRef}>
-          {/* Fare-zone rings (approximate), behind everything else. */}
+          {/* Filled concentric fare-zone bands -- lightest at the centre (Zone 1),
+              darkening outward, for a readable "zone map" backdrop. Approximate
+              (real zone boundaries are irregular); drawn largest-first so inner,
+              lighter bands paint on top. */}
+          {[...zones.rings].reverse().map(({ r, zone }) => (
+            <circle
+              key={`band-${zone}`}
+              cx={zones.cx}
+              cy={zones.cy}
+              r={r}
+              fill={ZONE_FILL[zone - 1]}
+              stroke="#3f496a"
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           {zones.rings.map(({ r, zone }) => (
-            <g key={zone}>
-              <circle
-                cx={zones.cx}
-                cy={zones.cy}
-                r={r}
-                fill="none"
-                stroke="#3b455f"
-                strokeWidth={1}
-                strokeDasharray="3 5"
-                opacity={0.5}
-                vectorEffect="non-scaling-stroke"
-              />
-              <text
-                x={zones.cx}
-                y={zones.cy - r + 3}
-                fill="#6b7688"
-                fontSize={7}
-                textAnchor="middle"
-                opacity={0.6}
-              >
-                {`Zone ${zone}`}
-              </text>
-            </g>
+            <text
+              key={`zlabel-${zone}`}
+              x={zones.cx}
+              y={zones.cy - r + 9}
+              fill="#8792a8"
+              fontSize={8}
+              textAnchor="middle"
+              opacity={0.6}
+            >
+              {`Zone ${zone}`}
+            </text>
           ))}
           {/* vector-effect: non-scaling-stroke keeps every width in SCREEN pixels, so
               zooming in doesn't balloon lines and glow into giant blobs. */}
@@ -366,6 +386,7 @@ export default function SchematicMap({ visibleLines }) {
             />
           ))}
           <g ref={trainsGroupRef} />
+          <circle ref={highlightRef} r={9} fill="none" display="none" pointerEvents="none" />
         </g>
       </svg>
       <TrainTooltip info={tooltip} />

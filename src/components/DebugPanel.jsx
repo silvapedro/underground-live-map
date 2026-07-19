@@ -115,7 +115,10 @@ export default function DebugPanel({ trains, visibleLines, feedStatus, diagnosti
             RENDER
           </div>
           <Row label="FPS" value={fps} color={fps >= 50 ? "#4CAF50" : fps >= 30 ? "#FFC107" : "#E32017"} />
-          <Row label="Reduced motion" value={window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "on" : "off"} />
+          <Row
+            label="Pulse FX"
+            value={window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "off (OS)" : "on"}
+          />
         </div>
       )}
     </div>

@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { TripsLayer } from "@deck.gl/geo-layers";
 
 import geoStations from "../data/geo-stations.json";
 import lineSequences from "../data/line-sequences.json";
 import lineColors from "../data/line-colors.json";
-import { lookupStationPoint, resolveGeoPoint } from "../lib/coords";
+import {
+  liveEtaSeconds,
+  lookupStationPoint,
+  prefersReducedMotion,
+  resolveGeoPoint,
+} from "../lib/coords";
+import { createMotionSmoother } from "../lib/motion";
 import { getTrains } from "../lib/trainStore";
 import TrainTooltip from "./TrainTooltip.jsx";
 
@@ -90,7 +96,12 @@ export default function GeoMap({ visibleLines }) {
     // trainId -> [[lng, lat, tSeconds], ...], trimmed to the last TRAIL_SECONDS.
     const trails = new Map();
     let lastSampleMs = 0;
+    let lastFrameMs = 0;
     const geoLinePaths = buildGeoLinePaths();
+    const reduceMotion = prefersReducedMotion();
+    // Degrees of lng/lat: even a slowly extrapolating train moves ~1e-6/frame, so this
+    // threshold only suppresses the heading update when the train is truly stationary.
+    const smoother = createMotionSmoother({ angleEpsilon: 1e-7 });
 
     const overlay = new MapboxOverlay({
       interleaved: true,
@@ -109,20 +120,28 @@ export default function GeoMap({ visibleLines }) {
     const tick = () => {
       const now = Date.now();
       const nowS = (now - timeOriginMs) / 1000; // small relative value, see timeOriginMs above
+      const dtS = lastFrameMs ? Math.min(0.1, (now - lastFrameMs) / 1000) : 0.016;
+      lastFrameMs = now;
+      // Soft breathing pulse on the glow halo, matching the old prototype's cadence.
+      const pulse = reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now / 240);
+
       const sampleTrail = now - lastSampleMs >= TRAIL_SAMPLE_MS;
       if (sampleTrail) lastSampleMs = now;
 
       // Resolved once per frame (not per accessor call): each train's real-world
-      // [lng, lat] extrapolated from its last fromStation/toStation/fraction poll.
-      // geo-stations.json stores [lat, lng]; deck.gl positions are [lng, lat].
+      // [lng, lat] extrapolated from its last fromStation/toStation/fraction poll,
+      // then eased through the motion smoother so poll-time jumps glide instead of
+      // teleporting. geo-stations.json stores [lat, lng]; deck.gl wants [lng, lat].
       const positioned = [];
       const seenIds = new Set();
       for (const train of getTrains()) {
         if (!visibleLinesRef.current.has(train.lineId)) continue;
         const point = resolveGeoPoint(geoStations, train, now);
         if (!point) continue;
-        const lngLat = [point[1], point[0]];
-        positioned.push({ train, lngLat });
+        const eased = smoother.step(train.id, point[1], point[0], dtS, reduceMotion);
+        const lngLat = [eased.x, eased.y];
+        // eased.angleDeg is atan2(dLat, dLng): degrees CCW from east, y-up like the map.
+        positioned.push({ train, lngLat, angleDeg: eased.angleDeg });
         seenIds.add(train.id);
 
         if (sampleTrail) {
@@ -140,6 +159,7 @@ export default function GeoMap({ visibleLines }) {
       for (const id of trails.keys()) {
         if (!seenIds.has(id)) trails.delete(id);
       }
+      smoother.prune(seenIds);
 
       const trailData = [];
       for (const { lineId, path } of trails.values()) {
@@ -162,12 +182,24 @@ export default function GeoMap({ visibleLines }) {
         opacity: 0.6,
       });
 
+      // Soft pulsing halo underneath each train, in its line colour.
+      const glowLayer = new ScatterplotLayer({
+        id: "train-glow",
+        data: positioned,
+        pickable: false,
+        radiusUnits: "pixels",
+        getRadius: 11 * pulse,
+        getFillColor: (d) => [...(LINE_RGB[d.train.lineId] ?? FALLBACK_RGB), 60],
+        getPosition: (d) => d.lngLat,
+        updateTriggers: { getPosition: now, getRadius: pulse },
+      });
+
       const scatterLayer = new ScatterplotLayer({
         id: "trains",
         data: positioned,
         pickable: true,
         radiusUnits: "pixels",
-        getRadius: 5,
+        getRadius: 5.5,
         getFillColor: (d) => LINE_RGB[d.train.lineId] ?? FALLBACK_RGB,
         getPosition: (d) => d.lngLat,
         // A white outline keeps dark line colours (Northern's official black, DLR-ish
@@ -179,6 +211,34 @@ export default function GeoMap({ visibleLines }) {
         // Forces deck.gl to re-read positions every frame -- they change continuously
         // via client-side extrapolation, not just when a new poll lands.
         updateTriggers: { getPosition: now },
+      });
+
+      // Heading arrow inside each dot, rotated to the direction of actual movement.
+      // '▲' points north at angle 0 and TextLayer angles are CCW degrees, so a train
+      // heading east (angleDeg 0, measured CCW from east) needs a -90 rotation.
+      const arrowLayer = new TextLayer({
+        id: "train-headings",
+        data: positioned.filter((d) => d.angleDeg != null),
+        pickable: false,
+        characterSet: ["▲"],
+        getText: () => "▲",
+        getPosition: (d) => d.lngLat,
+        getAngle: (d) => d.angleDeg - 90,
+        getColor: [255, 255, 255, 235],
+        getSize: 8,
+        updateTriggers: { getPosition: now, getAngle: now },
+      });
+
+      const linesGlowLayer = new PathLayer({
+        id: "tube-lines-glow",
+        data: geoLinePaths.filter((p) => visibleLinesRef.current.has(p.lineId)),
+        getPath: (d) => d.path,
+        getColor: (d) => [...(LINE_RGB[d.lineId] ?? FALLBACK_RGB), 45],
+        getWidth: 9,
+        widthUnits: "pixels",
+        widthMinPixels: 6,
+        capRounded: true,
+        jointRounded: true,
       });
 
       const linesLayer = new PathLayer({
@@ -193,8 +253,10 @@ export default function GeoMap({ visibleLines }) {
         jointRounded: true,
       });
 
-      // Draw order: tracks underneath, then fading trails, then the train dots on top.
-      overlay.setProps({ layers: [linesLayer, tripsLayer, scatterLayer] });
+      // Draw order: track glow, tracks, fading trails, halo, dots, heading arrows.
+      overlay.setProps({
+        layers: [linesGlowLayer, linesLayer, tripsLayer, glowLayer, scatterLayer, arrowLayer],
+      });
 
       const activeId = lockedIdRef.current ?? hoveredIdRef.current;
       const active = activeId != null ? positioned.find((d) => d.train.id === activeId) : null;
@@ -206,6 +268,7 @@ export default function GeoMap({ visibleLines }) {
           y: screen.y,
           locked: lockedIdRef.current != null,
           containerWidth: containerRef.current?.clientWidth,
+          etaNow: liveEtaSeconds(active.train, now),
         });
       } else {
         setTooltip((prev) => (prev ? null : prev));

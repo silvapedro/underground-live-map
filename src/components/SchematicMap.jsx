@@ -7,7 +7,13 @@ import schematicStations from "../data/schematic-stations.json";
 import viewBox from "../data/schematic-viewbox.json";
 import lineSequences from "../data/line-sequences.json";
 import lineColors from "../data/line-colors.json";
-import { lookupStationPoint, resolveSchematicPoint } from "../lib/coords";
+import {
+  liveEtaSeconds,
+  lookupStationPoint,
+  prefersReducedMotion,
+  resolveSchematicPoint,
+} from "../lib/coords";
+import { createMotionSmoother } from "../lib/motion";
 import { getTrains } from "../lib/trainStore";
 import TrainTooltip from "./TrainTooltip.jsx";
 
@@ -82,30 +88,76 @@ export default function SchematicMap({ visibleLines }) {
 
   useEffect(() => {
     let rafId;
+    let lastFrameMs = 0;
+    const reduceMotion = prefersReducedMotion();
+    // viewBox units: sub-0.02 movement per frame is stillness, not a heading change.
+    const smoother = createMotionSmoother({ angleEpsilon: 0.02 });
+
+    // Each train renders as a <g>: soft glow halo, coloured core dot, and a white
+    // heading triangle rotated to the direction of actual displayed movement.
+    function makeTrainNode() {
+      const g = document.createElementNS(SVG_NS, "g");
+      const glow = document.createElementNS(SVG_NS, "circle");
+      glow.setAttribute("r", "8");
+      const core = document.createElementNS(SVG_NS, "circle");
+      core.setAttribute("r", "4");
+      core.setAttribute("stroke", "#ffffff");
+      core.setAttribute("stroke-width", "1");
+      const arrow = document.createElementNS(SVG_NS, "polygon");
+      arrow.setAttribute("points", "4.2,0 -2.6,2.8 -2.6,-2.8"); // points right at 0deg
+      arrow.setAttribute("fill", "#ffffff");
+      g.append(glow, core, arrow);
+      return g;
+    }
+
     const tick = () => {
       const now = Date.now();
+      const dtS = lastFrameMs ? Math.min(0.1, (now - lastFrameMs) / 1000) : 0.016;
+      lastFrameMs = now;
+      const pulse = reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now / 240);
+
+      // Train nodes live inside the zoomed <g>, so counter-scale them by 1/k to keep
+      // markers a constant screen size -- the same job vector-effect does for strokes,
+      // which SVG has no equivalent of for a circle radius or polygon.
+      const invScale = 1 / (zoomScaleRef.current || 1);
+
       const group = trainsGroupRef.current;
       const positioned = [];
+      const seenIds = new Set();
       for (const train of getTrains()) {
         if (!visibleLinesRef.current.has(train.lineId)) continue;
-        const point = resolveSchematicPoint(schematicStations, train, now);
-        if (point) positioned.push({ train, point });
+        const target = resolveSchematicPoint(schematicStations, train, now);
+        if (!target) continue;
+        const eased = smoother.step(train.id, target[0], target[1], dtS, reduceMotion);
+        // eased.angleDeg is atan2(dy, dx) with SVG's y-down axis, which is exactly
+        // what SVG rotate() (clockwise-positive) expects -- no conversion needed.
+        positioned.push({ train, point: [eased.x, eased.y], angleDeg: eased.angleDeg });
+        seenIds.add(train.id);
       }
+      smoother.prune(seenIds);
       latestPositionedRef.current = positioned;
 
       if (group) {
         while (group.children.length < positioned.length) {
-          group.appendChild(document.createElementNS(SVG_NS, "circle"));
+          group.appendChild(makeTrainNode());
         }
         while (group.children.length > positioned.length) {
           group.removeChild(group.lastChild);
         }
-        positioned.forEach(({ train, point }, i) => {
-          const circle = group.children[i];
-          circle.setAttribute("cx", point[0]);
-          circle.setAttribute("cy", point[1]);
-          circle.setAttribute("r", "4");
-          circle.setAttribute("fill", lineColors[train.lineId] ?? "#cfd8e6");
+        positioned.forEach(({ train, point, angleDeg }, i) => {
+          const g = group.children[i];
+          const [glow, core, arrow] = g.children;
+          const color = lineColors[train.lineId] ?? "#cfd8e6";
+          g.setAttribute("transform", `translate(${point[0]} ${point[1]}) scale(${invScale})`);
+          glow.setAttribute("fill", color);
+          glow.setAttribute("opacity", (0.28 * pulse).toFixed(3));
+          core.setAttribute("fill", color);
+          if (angleDeg == null) {
+            arrow.setAttribute("display", "none");
+          } else {
+            arrow.removeAttribute("display");
+            arrow.setAttribute("transform", `rotate(${angleDeg.toFixed(1)})`);
+          }
         });
       }
 
@@ -123,6 +175,7 @@ export default function SchematicMap({ visibleLines }) {
           y: screenPt.y - rect.top,
           locked: lockedIdRef.current != null,
           containerWidth: rect.width,
+          etaNow: liveEtaSeconds(active.train, now),
         });
       } else {
         setTooltip((prev) => (prev ? null : prev));
@@ -174,20 +227,46 @@ export default function SchematicMap({ visibleLines }) {
         }}
       >
         <g ref={zoomGroupRef}>
+          {/* vector-effect: non-scaling-stroke keeps every width in SCREEN pixels, so
+              zooming in doesn't balloon lines and glow into giant blobs. */}
+          {/* Wide low-opacity underlay first: the soft glow beneath every line. */}
+          {linePaths.map(({ lineId, points }, i) => (
+            <path
+              key={`glow-${lineId}-${i}`}
+              d={lineGenerator(points)}
+              fill="none"
+              stroke={lineColors[lineId] ?? "#888"}
+              strokeWidth={9}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              opacity={0.18}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           {linePaths.map(({ lineId, points }, i) => (
             <path
               key={`${lineId}-${i}`}
               d={lineGenerator(points)}
               fill="none"
               stroke={lineColors[lineId] ?? "#888"}
-              strokeWidth={3}
+              strokeWidth={3.5}
               strokeLinejoin="round"
               strokeLinecap="round"
               opacity={0.85}
+              vectorEffect="non-scaling-stroke"
             />
           ))}
+          {/* A zero-length round-capped stroke renders as a screen-constant dot --
+              circles have no non-scaling equivalent for their radius. */}
           {stationPoints.map(([name, [x, y]]) => (
-            <circle key={name} cx={x} cy={y} r={2.5} fill="#cfd8e6" />
+            <path
+              key={name}
+              d={`M ${x} ${y} h 0.001`}
+              stroke="#cfd8e6"
+              strokeWidth={5}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
           ))}
           <g ref={trainsGroupRef} />
         </g>

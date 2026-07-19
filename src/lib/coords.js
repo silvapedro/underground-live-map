@@ -48,6 +48,15 @@ export function extrapolateFraction(train, nowMs) {
   return Math.min(1, train.fraction + rate * elapsedSeconds);
 }
 
+/**
+ * The train's remaining seconds to toStation right now, counting down between polls.
+ * etaSeconds is a snapshot taken at receivedAtMs; subtract the elapsed time since.
+ */
+export function liveEtaSeconds(train, nowMs) {
+  const elapsed = (nowMs - train.receivedAtMs) / 1000;
+  return Math.max(0, train.etaSeconds - elapsed);
+}
+
 /** Resolve a train's position in an arbitrary 2D coordinate table (geo or schematic),
  * or null if either station is unknown there. Both tables share the same shape:
  * {"Station Name": {lineId: [a, b], "*": [a, b]}}. */

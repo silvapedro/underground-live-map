@@ -1,20 +1,39 @@
 import lineNames from "../data/line-names.json";
 
 function formatEta(etaSeconds) {
-  if (etaSeconds <= 0) return "due";
-  if (etaSeconds >= 60) return `${Math.round(etaSeconds / 60)} min`;
-  return `${Math.round(etaSeconds)}s`;
+  if (etaSeconds < 1) return "due";
+  if (etaSeconds < 60) return `${Math.ceil(etaSeconds)}s`;
+  const m = Math.floor(etaSeconds / 60);
+  const s = Math.round(etaSeconds % 60);
+  return `${m}m ${String(s).padStart(2, "0")}s`;
+}
+
+/** Station names carry per-mode suffixes ("X Station", "X Tram Stop") that just eat
+ * tooltip width; strip them for display only. */
+function shortName(name) {
+  return name
+    .replace(/&amp;/g, "&")
+    .replace(/ (Underground |Rail |DLR )?Station$/, "")
+    .replace(/ Tram Stop$/, "");
 }
 
 /**
  * Shared hover/click tooltip for both rendering modes. `info` is either null or
- * {train, x, y, locked} where x/y are CSS pixels relative to the map container.
+ * {train, x, y, locked, etaNow} where x/y are CSS pixels relative to the map
+ * container and etaNow is the live (per-frame) countdown to the next station.
  */
 export default function TrainTooltip({ info }) {
   if (!info) return null;
   const { train, x, y, locked } = info;
   const lineName = lineNames[train.lineId] ?? train.lineId;
   const flip = x > (info.containerWidth ?? 1e9) * 0.6;
+  const eta = formatEta(info.etaNow ?? train.etaSeconds);
+
+  const journey = train.atPlatform
+    ? `at ${shortName(train.toStation)}`
+    : train.fromStation === train.toStation
+      ? `approaching ${shortName(train.toStation)} · ${eta}`
+      : `${shortName(train.fromStation)} → ${shortName(train.toStation)} · ${eta}`;
 
   return (
     <div
@@ -44,10 +63,9 @@ export default function TrainTooltip({ info }) {
       <div style={{ color: "#6b7688", fontSize: 10, marginBottom: 4 }}>
         Train {train.vehicleId}
       </div>
-      <div style={{ color: "#aab4c5" }}>toward {train.destination}</div>
-      <div style={{ color: "#6b7688", fontSize: 11, marginTop: 2 }}>
-        {train.atPlatform ? "at " : "next: "}
-        {train.toStation} · {formatEta(train.etaSeconds)}
+      <div style={{ color: "#aab4c5" }}>toward {shortName(train.destination)}</div>
+      <div style={{ color: "#9fd0ff", fontSize: 11, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+        {journey}
       </div>
     </div>
   );

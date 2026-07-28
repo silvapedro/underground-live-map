@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate data/london.json and data/london-text.json from the TfL Arrivals API.
+"""Generate data/train-positions.json and data/london-text.json from the TfL Arrivals API.
 
-The client-side code (js/trains.js) consumes london.json for live train positions
-and the static station/polyline geography. pyapp/app.py runs this script as a
-subprocess every 60 seconds.
+The frontend (src/) polls GET /api/trains, which pyapp/services/tube_positions.py backs
+with data/train-positions.json -- each train's position is a coordinate-free
+{fromStation, toStation, fraction}, resolved into real or schematic pixels client-side.
+pyapp/app.py runs this script as a subprocess every DATA_REFRESH_INTERVAL seconds.
 
 Usage:
     python bin/fetch.py [--app-key KEY] [--debug]
@@ -12,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
 import logging
 import os
@@ -23,6 +23,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +81,13 @@ LINES = {
     "victoria": "Victoria",
     "waterloo-city": "Waterloo & City",
 }
+
+# The 6 London Overground lines (2024 rename). TfL's API reports no currentLocation
+# text at all for these -- same as DLR/Elizabeth -- and their station names ("Emerson
+# Park Rail Station") already carry their own suffix, so they take no extra one either.
+OVERGROUND_LINES = frozenset({
+    "liberty", "lioness", "mildmay", "suffragette", "weaver", "windrush",
+})
 
 # Single-letter line keys used in stations.json -> full line names.
 LINE_ABBREVIATIONS = {
@@ -146,7 +154,7 @@ def canon_station_name(s: str, line: str) -> str:
 
     if line == "tram":
         s = s + " Tram Stop"
-    elif line in ("dlr", "london-overground", "elizabeth"):
+    elif line in ("dlr", "elizabeth") or line in OVERGROUND_LINES:
         pass
     else:
         s = s + " Station"
@@ -252,18 +260,6 @@ def load_station_locations(path: Path) -> StationLocations:
                     stations[name]["circle"] = stations[name][abbrev]
 
     return stations
-
-
-def lookup(stations: StationLocations, line: str, name: str) -> Coord:
-    """Return (lat, lng) for a station on a line; (0, 0) if it cannot be resolved."""
-    if name not in stations:
-        return (0, 0)
-    if line in stations[name]:
-        return stations[name][line]
-    if "*" in stations[name]:
-        return stations[name]["*"]
-    log.warning("Could not look up %s on line %s", name, line)
-    return (0, 0)
 
 
 def fetch_line(key: str, api: str, cache_dir: Path, ttl: int = CACHE_TTL) -> list[dict] | None:
@@ -384,6 +380,7 @@ class ParseState:
             "current_location": current_location,
             "time_to_station": seconds,
             "destination": destination,
+            "vehicle_id": set_id,
         }
 
         previous = self.out.get(key, {}).get(train_key, {}).get("time_to_station", 999999)
@@ -428,67 +425,64 @@ def deduplicate_trains(out: OrderedDict[str, OrderedDict[str, dict]]) -> None:
                             del out[key][train_id]
 
 
-def _interpolate(a: Coord, b: Coord, fraction: float) -> Coord:
-    return (a[0] + fraction * (b[0] - a[0]), a[1] + fraction * (b[1] - a[1]))
+@dataclass
+class Segment:
+    """A train's position expressed as progress between two named stations.
 
-
-def assign_locations(
-    out: OrderedDict[str, OrderedDict[str, dict]], stations: StationLocations
-) -> None:
-    """Set arr['location'] for each train by interpolating from its currentLocation text.
-
-    Trains whose location cannot be determined are left without a 'location' key and are
-    omitted from the map output.
+    Coordinate-agnostic on purpose: either rendering mode (real geography or an
+    idealised schematic layout) resolves actual pixels by looking up from_station/
+    to_station in its own coordinate table and lerping by fraction.
     """
-    for line, ids in out.items():
-        for arr in ids.values():
-            current = arr["current_location"]
-            if any(skip in current for skip in UNPLOTTABLE_LOCATIONS):
-                continue
 
-            station_name = arr["station_name"]
-            seconds = arr["time_to_station"]
-
-            # At the station itself.
-            if current == "At Platform":
-                arr["location"] = lookup(stations, line, station_name)
-
-            # These lines report no location at all; place at the next station.
-            if not current and line in ("dlr", "london-overground", "tram", "elizabeth"):
-                arr["location"] = lookup(stations, line, station_name)
-
-            # Departed a named station, heading to station_name.
-            m = re.match(r"(?:South of|Leaving|Left) (.*?)(?:,? heading)?(?: (?:towards|to) .*)?$", current)
-            if m:
-                depart = lookup(stations, line, canon_station_name(m.group(1), line))
-                arrive = lookup(stations, line, station_name)
-                arr["location"] = _interpolate(depart, arrive, 30 / (seconds + 30))
-
-            # Explicitly between two named stations.
-            m = re.match(r"Between (.*?) and (.*)", current)
-            if m:
-                if line == "H" and station_name != canon_station_name(m.group(2), line):
-                    continue
-                depart = lookup(stations, line, canon_station_name(m.group(1), line))
-                arrive = lookup(stations, line, canon_station_name(m.group(2), line))
-                span = seconds + 30 if seconds > 150 else 180
-                arr["location"] = _interpolate(depart, arrive, (span - seconds) / span)
-
-            # We don't know where it came from, so snap to the station it is approaching.
-            # Interpolating properly would need position history.
-            m = re.match(r"Approaching (.*)", current)
-            if m:
-                arr["location"] = lookup(stations, line, canon_station_name(m.group(1), line))
+    from_station: str
+    to_station: str
+    fraction: float  # 0..1 progress from from_station to to_station
 
 
-def build_payload(state: ParseState, stations: StationLocations) -> tuple[dict, list]:
-    """Return (london.json payload, london-text.json payload)."""
-    out_map = {
-        "station": "London Underground",
-        "lastupdate": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "trains": [],
-        "stations": [],
-    }
+def resolve_segment(current: str, station_name: str, seconds: int, line: str) -> Segment | None:
+    """Determine the (from, to, fraction) segment for a train from its currentLocation text.
+
+    Five cases: At Platform / no-location lines (dlr, overground, tram, elizabeth) /
+    Leaving-South of-Left / Between / Approaching. Returns station names and a progress
+    fraction rather than coordinates -- coordinate resolution is the caller's job.
+    Returns None if the location text cannot be resolved (train is omitted from output).
+    """
+    # At the station itself.
+    if current == "At Platform":
+        return Segment(station_name, station_name, 1.0)
+
+    # These lines report no location at all; place at the next station.
+    if not current and (line in ("dlr", "tram", "elizabeth") or line in OVERGROUND_LINES):
+        return Segment(station_name, station_name, 1.0)
+
+    # Departed a named station, heading to station_name.
+    m = re.match(r"(?:South of|Leaving|Left) (.*?)(?:,? heading)?(?: (?:towards|to) .*)?$", current)
+    if m:
+        depart = canon_station_name(m.group(1), line)
+        return Segment(depart, station_name, 30 / (seconds + 30))
+
+    # Explicitly between two named stations.
+    m = re.match(r"Between (.*?) and (.*)", current)
+    if m:
+        arrive_name = canon_station_name(m.group(2), line)
+        if line == "H" and station_name != arrive_name:
+            return None
+        depart_name = canon_station_name(m.group(1), line)
+        span = seconds + 30 if seconds > 150 else 180
+        return Segment(depart_name, arrive_name, (span - seconds) / span)
+
+    # We don't know where it came from, so snap to the station it is approaching.
+    # Interpolating properly would need position history.
+    m = re.match(r"Approaching (.*)", current)
+    if m:
+        arrive_name = canon_station_name(m.group(1), line)
+        return Segment(arrive_name, arrive_name, 1.0)
+
+    return None
+
+
+def build_text_payload(state: ParseState) -> list[dict]:
+    """Return the london-text.json payload: a flat per-train listing for /text."""
     out_text: list[dict] = []
 
     for line, ids in state.out.items():
@@ -501,64 +495,60 @@ def build_payload(state: ParseState, stations: StationLocations) -> tuple[dict, 
                 "current": "At " + arr["station_name"] if at_platform else arr["current_location"],
             })
 
-            if "location" not in arr:
+    return out_text
+
+
+def build_train_positions(state: ParseState) -> list[dict]:
+    """Return the abstract, coordinate-free position of every plottable train.
+
+    Consumed by pyapp/services/tube_positions.py and, from there, by the frontend: each
+    rendering mode (geographic or schematic) resolves real pixels itself by looking up
+    fromStation/toStation in its own coordinate table and lerping by fraction. This is
+    the single position pipeline shared by both modes -- no per-mode backend logic.
+    """
+    positions: list[dict] = []
+    for line, ids in state.out.items():
+        for train_id, arr in ids.items():
+            current = arr["current_location"]
+            if any(skip in current for skip in UNPLOTTABLE_LOCATIONS):
                 continue
 
-            next_stops = []
-            for n in sorted(state.out_next[line][train_id], key=lambda x: x["time_to_station"]):
-                station = n["station_name"]
-                point = lookup(stations, line, station)
-                mins = n["time_to_station"] / 60
-                mins_p = "%d" % mins if int(mins) == mins else "%.1f" % mins
-                next_stops.append({
-                    "point": [point[0], point[1]],
-                    "name": station,
-                    "mins": mins,
-                    "dexp": "in %s minute%s" % (mins_p, "" if n["time_to_station"] == 60 else "s"),
-                })
+            seg = resolve_segment(current, arr["station_name"], arr["time_to_station"], line)
+            if seg is None:
+                continue
 
-            out_map["trains"].append({
-                "point": [arr["location"][0], arr["location"][1]],
-                "next": next_stops,
-                "left": "",
+            positions.append({
                 "id": "%s-%s" % (line, train_id),
-                "title": LINES[line] + " train to " + arr["destination"] + " [" + train_id + "]",
+                "lineId": line,
+                "vehicleId": arr["vehicle_id"],
+                "destination": arr["destination"],
+                "fromStation": seg.from_station,
+                "toStation": seg.to_station,
+                "fraction": round(seg.fraction, 4),
+                "etaSeconds": arr["time_to_station"],
+                "atPlatform": current == "At Platform",
             })
 
-    for name, points in sorted(stations.items()):
-        _, coord = points.popitem()
-        lat, lng = coord
-        out_map["stations"].append({"point": [lat, lng], "name": name})
-
-    return out_map, out_text
+    return positions
 
 
-def write_outputs(out_map: dict, out_text: list, output_dir: Path, polylines_file: Path) -> None:
-    """Write london.json (atomically) and london-text.json.
-
-    london-lines.js is a raw JSON fragment ('"polylines": [...]') that is spliced into
-    the serialised payload, rather than being parsed and re-serialised.
-    """
+def write_outputs(out_text: list, train_positions: list[dict], output_dir: Path) -> None:
+    """Write london-text.json and train-positions.json (the latter atomically)."""
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    body = json.dumps(out_map, indent=2)
-    polylines = polylines_file.read_text(encoding="utf-8")
-    body = body[:-2] + ",\n" + polylines + "}"
-
-    tmp = output_dir / "london.jsonN"
-    tmp.write_text(body, encoding="utf-8")
-    # os.replace (not os.rename) so this is atomic and works on Windows.
-    os.replace(tmp, output_dir / "london.json")
 
     with open(output_dir / "london-text.json", "w", encoding="utf-8") as fp:
         json.dump(out_text, fp)
+
+    positions_body = json.dumps({"updatedAt": time.time(), "trains": train_positions})
+    positions_tmp = output_dir / "train-positions.jsonN"
+    positions_tmp.write_text(positions_body, encoding="utf-8")
+    # os.replace (not os.rename) so this is atomic and works on Windows.
+    os.replace(positions_tmp, output_dir / "train-positions.json")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("-d", "--debug", action="store_true", help="verbose output")
-    parser.add_argument("-s", "--stations", default="stations.json",
-                        help="station location file, relative to this script")
     parser.add_argument("-o", "--output", default="../data",
                         help="output directory, relative to this script")
     parser.add_argument("-c", "--cache-dir", default="cache",
@@ -588,9 +578,6 @@ def main(argv: list[str] | None = None) -> int:
     if truststore is None:
         log.debug("truststore not installed; using Python's default TLS verification")
 
-    log.info("Loading station locations from %s", options.stations)
-    stations = load_station_locations(SCRIPT_DIR / options.stations)
-
     state = ParseState()
     fetched = skipped = 0
     for key in LINES:
@@ -608,16 +595,16 @@ def main(argv: list[str] | None = None) -> int:
     log.debug("Removing duplicate trains")
     deduplicate_trains(state.out)
 
-    log.debug("Interpolating train positions")
-    assign_locations(state.out, stations)
+    log.debug("Building train position payload")
+    train_positions = build_train_positions(state)
 
     log.debug("Building output payloads")
-    out_map, out_text = build_payload(state, stations)
+    out_text = build_text_payload(state)
 
-    write_outputs(out_map, out_text, output_dir, SCRIPT_DIR / "london-lines.js")
+    write_outputs(out_text, train_positions, output_dir)
     log.info(
         "Wrote %d trains (%d lines fetched) to %s",
-        len(out_map["trains"]), fetched, output_dir,
+        len(train_positions), fetched, output_dir,
     )
     return 0
 

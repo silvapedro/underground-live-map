@@ -1,8 +1,14 @@
 *.pyc
 .env
-data/london.json
 data/london-text.json
-schematic/data
+data/train-positions.json
 bin/cache
+/tfwm/data
+/tfwm/bin/cache
+/tfwm/bin/config.py
 .vite
 node_modules
+.claude
+.claude/skills
+.agents
+.agents/skills

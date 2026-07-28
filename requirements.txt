@@ -7,3 +7,4 @@ python-dotenv>=1.0.0,<2.0.0
 # antivirus/proxies, or whose Windows cert store contains a cert OpenSSL rejects.
 truststore>=0.10.0,<1.0.0
 pytest>=8.0.0,<9.0.0
+.

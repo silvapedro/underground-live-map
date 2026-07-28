@@ -1,0 +1,3914 @@
+{
+  "Abbey Road DLR Station": {
+    "*": [
+      51.531926,
+      0.003737
+    ]
+  },
+  "Abbey Wood": {
+    "*": [
+      51.491284,
+      0.121087
+    ]
+  },
+  "Abbey Wood (London) Rail Station": {
+    "*": [
+      51.491284,
+      0.121087
+    ]
+  },
+  "Acton Central Rail Station": {
+    "*": [
+      51.508716,
+      -0.262971
+    ]
+  },
+  "Acton Main Line Rail Station": {
+    "*": [
+      51.51718,
+      -0.266756
+    ]
+  },
+  "Acton Town Station": {
+    "*": [
+      51.503057,
+      -0.280462
+    ]
+  },
+  "Addington Village Tram Stop": {
+    "*": [
+      51.356241,
+      -0.032694
+    ]
+  },
+  "Addiscombe Tram Stop": {
+    "*": [
+      51.37981,
+      -0.073242
+    ]
+  },
+  "Aldgate East Station": {
+    "*": [
+      51.515037,
+      -0.072384
+    ]
+  },
+  "Aldgate Station": {
+    "*": [
+      51.514246,
+      -0.075689
+    ]
+  },
+  "All Saints DLR Station": {
+    "*": [
+      51.511,
+      -0.013135
+    ]
+  },
+  "All Saints Station": {
+    "*": [
+      51.511010078082435,
+      -0.012751749577122285
+    ]
+  },
+  "Alperton Station": {
+    "*": [
+      51.540627,
+      -0.29961
+    ]
+  },
+  "Amersham": {
+    "*": [
+      51.674207,
+      -0.60759
+    ]
+  },
+  "Amersham Station": {
+    "*": [
+      51.67414971062973,
+      -0.607478839102469
+    ]
+  },
+  "Ampere Way Tram Stop": {
+    "*": [
+      51.382238,
+      -0.123654
+    ]
+  },
+  "Anerley Rail Station": {
+    "*": [
+      51.412153,
+      -0.065886
+    ]
+  },
+  "Angel Station": {
+    "*": [
+      51.532796,
+      -0.105992
+    ]
+  },
+  "Archway Station": {
+    "*": [
+      51.565478,
+      -0.134819
+    ]
+  },
+  "Arena Tram Stop": {
+    "*": [
+      51.391525,
+      -0.058347
+    ]
+  },
+  "Arnos Grove Station": {
+    "*": [
+      51.616446,
+      -0.133062
+    ]
+  },
+  "Arsenal Station": {
+    "*": [
+      51.558655,
+      -0.107457
+    ]
+  },
+  "Avenue Road Tram Stop": {
+    "*": [
+      51.4068,
+      -0.049476
+    ]
+  },
+  "Baker Street Station": {
+    "*": [
+      51.522883,
+      -0.15713
+    ]
+  },
+  "Balham": {
+    "*": [
+      51.443259,
+      -0.152707
+    ]
+  },
+  "Balham Station": {
+    "*": [
+      51.44332897963525,
+      -0.15320755266647282
+    ]
+  },
+  "Bank": {
+    "*": [
+      51.513395,
+      -0.089095
+    ]
+  },
+  "Bank DLR Station": {
+    "*": [
+      51.513395,
+      -0.089095
+    ]
+  },
+  "Bank Station": {
+    "*": [
+      51.513302371519345,
+      -0.08891580904526
+    ]
+  },
+  "Barbican Station": {
+    "*": [
+      51.520275,
+      -0.097993
+    ]
+  },
+  "Barking": {
+    "*": [
+      51.539413,
+      0.080988
+    ]
+  },
+  "Barking Rail Station": {
+    "*": [
+      51.539413,
+      0.080988
+    ]
+  },
+  "Barking Riverside": {
+    "*": [
+      51.519108,
+      0.114764
+    ]
+  },
+  "Barking Station": {
+    "*": [
+      51.539451208515715,
+      0.08086318284941044
+    ]
+  },
+  "Barkingside Station": {
+    "*": [
+      51.585689,
+      0.088585
+    ]
+  },
+  "Barons Court Station": {
+    "*": [
+      51.490311,
+      -0.213427
+    ]
+  },
+  "Battersea Power Station Station": {
+    "*": [
+      51.479932,
+      -0.142142
+    ]
+  },
+  "Bayswater Station": {
+    "*": [
+      51.512284,
+      -0.187938
+    ]
+  },
+  "Beckenham Junction Tram Stop": {
+    "*": [
+      51.411175,
+      -0.026016
+    ]
+  },
+  "Beckenham Road Tram Stop": {
+    "*": [
+      51.409532,
+      -0.043421
+    ]
+  },
+  "Beckton DLR Station": {
+    "*": [
+      51.514362,
+      0.061453
+    ]
+  },
+  "Beckton Park DLR Station": {
+    "*": [
+      51.508793,
+      0.054932
+    ]
+  },
+  "Beckton Park Station": {
+    "*": [
+      51.50894379267658,
+      0.05489774670154237
+    ]
+  },
+  "Beckton Station": {
+    "*": [
+      51.51513328260473,
+      0.06094244235996154
+    ]
+  },
+  "Becontree Station": {
+    "*": [
+      51.540331,
+      0.127016
+    ]
+  },
+  "Beddington Lane Tram Stop": {
+    "*": [
+      51.389242,
+      -0.142167
+    ]
+  },
+  "Belgrave Walk Tram Stop": {
+    "*": [
+      51.40133,
+      -0.177806
+    ]
+  },
+  "Belsize Park Station": {
+    "*": [
+      51.550407,
+      -0.164471
+    ]
+  },
+  "Bermondsey Station": {
+    "*": [
+      51.49775,
+      -0.063993
+    ]
+  },
+  "Bethnal Green Rail Station": {
+    "*": [
+      51.523917,
+      -0.059568
+    ]
+  },
+  "Bethnal Green Station": {
+    "*": [
+      51.527222,
+      -0.055506
+    ]
+  },
+  "Birkbeck Tram Stop": {
+    "*": [
+      51.403893,
+      -0.055733
+    ]
+  },
+  "Blackfriars": {
+    "*": [
+      51.509613,
+      -0.104166
+    ]
+  },
+  "Blackfriars Station": {
+    "*": [
+      51.51149052224749,
+      -0.10360673121986262
+    ]
+  },
+  "Blackhorse Lane Tram Stop": {
+    "*": [
+      51.384757,
+      -0.070562
+    ]
+  },
+  "Blackhorse Road": {
+    "*": [
+      51.586768,
+      -0.041185
+    ]
+  },
+  "Blackhorse Road Rail Station": {
+    "*": [
+      51.586768,
+      -0.041185
+    ]
+  },
+  "Blackhorse Road Station": {
+    "*": [
+      51.58695119543893,
+      -0.040996340920370744
+    ]
+  },
+  "Blackwall DLR Station": {
+    "*": [
+      51.507991,
+      -0.006969
+    ]
+  },
+  "Blackwall Station": {
+    "*": [
+      51.50821611461839,
+      -0.007108496961494498
+    ]
+  },
+  "Bond Street": {
+    "*": [
+      51.514304,
+      -0.149723
+    ]
+  },
+  "Bond Street Station": {
+    "*": [
+      51.514304,
+      -0.149723
+    ]
+  },
+  "Borough Station": {
+    "*": [
+      51.501199,
+      -0.09337
+    ]
+  },
+  "Boston Manor Station": {
+    "*": [
+      51.495635,
+      -0.324939
+    ]
+  },
+  "Bounds Green Station": {
+    "*": [
+      51.607034,
+      -0.124235
+    ]
+  },
+  "Bow Church DLR Station": {
+    "*": [
+      51.527858,
+      -0.020936
+    ]
+  },
+  "Bow Church Station": {
+    "*": [
+      51.527333106708156,
+      -0.02069142439387218
+    ]
+  },
+  "Bow Road Station": {
+    "*": [
+      51.52694,
+      -0.025128
+    ]
+  },
+  "Brent Cross Station": {
+    "*": [
+      51.57665,
+      -0.213622
+    ]
+  },
+  "Brentwood Rail Station": {
+    "*": [
+      51.613605,
+      0.299586
+    ]
+  },
+  "Brixton": {
+    "*": [
+      51.462961,
+      -0.114531
+    ]
+  },
+  "Brixton Station": {
+    "*": [
+      51.462581333631725,
+      -0.1146355815786156
+    ]
+  },
+  "Brockley Rail Station": {
+    "*": [
+      51.464649,
+      -0.037537
+    ]
+  },
+  "Bromley-By-Bow Station": {
+    "*": [
+      51.52476993755734,
+      -0.011661937058285865
+    ]
+  },
+  "Bromley-by-Bow Station": {
+    "*": [
+      51.524839,
+      -0.011538
+    ]
+  },
+  "Brondesbury Park Rail Station": {
+    "*": [
+      51.540734,
+      -0.210054
+    ]
+  },
+  "Brondesbury Rail Station": {
+    "*": [
+      51.545166,
+      -0.202309
+    ]
+  },
+  "Bruce Grove Rail Station": {
+    "*": [
+      51.593959,
+      -0.069867
+    ]
+  },
+  "Buckhurst Hill Station": {
+    "*": [
+      51.626605,
+      0.046757
+    ]
+  },
+  "Burnham (Berks) Rail Station": {
+    "*": [
+      51.523506,
+      -0.646374
+    ]
+  },
+  "Burnt Oak Station": {
+    "*": [
+      51.602774,
+      -0.264048
+    ]
+  },
+  "Bush Hill Park Rail Station": {
+    "*": [
+      51.641519,
+      -0.069221
+    ]
+  },
+  "Bushey": {
+    "*": [
+      51.645582,
+      -0.384752
+    ]
+  },
+  "Bushey Rail Station": {
+    "*": [
+      51.645582,
+      -0.384752
+    ]
+  },
+  "Bushey Station": {
+    "*": [
+      51.644,
+      -0.385
+    ]
+  },
+  "Caledonian Road & Barnsbury Rail Station": {
+    "*": [
+      51.543041,
+      -0.116729
+    ]
+  },
+  "Caledonian Road &amp; Barnsbury Rail Station": {
+    "*": [
+      51.543041,
+      -0.116729
+    ]
+  },
+  "Caledonian Road Station": {
+    "*": [
+      51.548519,
+      -0.118493
+    ]
+  },
+  "Cambridge Heath (London) Rail Station": {
+    "*": [
+      51.531973,
+      -0.057279
+    ]
+  },
+  "Camden Road Rail Station": {
+    "*": [
+      51.541791,
+      -0.138701
+    ]
+  },
+  "Camden Town Station": {
+    "*": [
+      51.539292,
+      -0.14274
+    ]
+  },
+  "Canada Water": {
+    "*": [
+      51.498053,
+      -0.049667
+    ]
+  },
+  "Canada Water Rail Station": {
+    "*": [
+      51.498053,
+      -0.049667
+    ]
+  },
+  "Canada Water Station": {
+    "*": [
+      51.497931,
+      -0.049405
+    ]
+  },
+  "Canary Wharf": {
+    "*": [
+      51.503734,
+      -0.019121
+    ]
+  },
+  "Canary Wharf DLR Station": {
+    "*": [
+      51.503734,
+      -0.019121
+    ]
+  },
+  "Canary Wharf Station": {
+    "*": [
+      51.503550485647594,
+      -0.019431816253263262
+    ]
+  },
+  "Canning Town": {
+    "*": [
+      51.514029,
+      0.008025
+    ]
+  },
+  "Canning Town DLR Station": {
+    "*": [
+      51.514029,
+      0.008025
+    ]
+  },
+  "Canning Town Station": {
+    "*": [
+      51.51383712928957,
+      0.008171036532588041
+    ]
+  },
+  "Cannon Street": {
+    "*": [
+      51.511451,
+      -0.090357
+    ]
+  },
+  "Cannon Street Station": {
+    "*": [
+      51.5114337223373,
+      -0.09069485068098068
+    ]
+  },
+  "Canonbury Rail Station": {
+    "*": [
+      51.548732,
+      -0.092191
+    ]
+  },
+  "Canons Park Station": {
+    "*": [
+      51.607701,
+      -0.294693
+    ]
+  },
+  "Carpenders Park Rail Station": {
+    "*": [
+      51.628351,
+      -0.385939
+    ]
+  },
+  "Carpenders Park Station": {
+    "*": [
+      51.629,
+      -0.386
+    ]
+  },
+  "Centrale Tram Stop": {
+    "*": [
+      51.375769,
+      -0.103917
+    ]
+  },
+  "Chadwell Heath Rail Station": {
+    "*": [
+      51.568039,
+      0.128958
+    ]
+  },
+  "Chalfont & Latimer": {
+    "*": [
+      51.668109,
+      -0.560519
+    ]
+  },
+  "Chalfont &amp; Latimer": {
+    "*": [
+      51.668109,
+      -0.560519
+    ]
+  },
+  "Chalfont &amp; Latimer Station": {
+    "*": [
+      51.66802547392609,
+      -0.5605349564487762
+    ]
+  },
+  "Chalk Farm Station": {
+    "*": [
+      51.544118,
+      -0.153388
+    ]
+  },
+  "Chancery Lane Station": {
+    "*": [
+      51.518247,
+      -0.111583
+    ]
+  },
+  "Charing Cross": {
+    "*": [
+      51.507819,
+      -0.126137
+    ]
+  },
+  "Charing Cross Station": {
+    "*": [
+      51.50859320760319,
+      -0.12475468662436603
+    ]
+  },
+  "Chesham Station": {
+    "*": [
+      51.705208,
+      -0.611247
+    ]
+  },
+  "Cheshunt Rail Station": {
+    "*": [
+      51.702876,
+      -0.02396
+    ]
+  },
+  "Chigwell Station": {
+    "*": [
+      51.617916,
+      0.075041
+    ]
+  },
+  "Chingford Rail Station": {
+    "*": [
+      51.633087,
+      0.009897
+    ]
+  },
+  "Chiswick Park Station": {
+    "*": [
+      51.494627,
+      -0.267972
+    ]
+  },
+  "Chorleywood": {
+    "*": [
+      51.654249,
+      -0.518312
+    ]
+  },
+  "Chorleywood Station": {
+    "*": [
+      51.6542178607745,
+      -0.5183659897630541
+    ]
+  },
+  "Church Street Tram Stop": {
+    "*": [
+      51.373708,
+      -0.104361
+    ]
+  },
+  "Clapham Common Station": {
+    "*": [
+      51.461742,
+      -0.138317
+    ]
+  },
+  "Clapham High Street Rail Station": {
+    "*": [
+      51.465481,
+      -0.132522
+    ]
+  },
+  "Clapham Junction": {
+    "*": [
+      51.463724,
+      -0.168997
+    ]
+  },
+  "Clapham Junction Rail Station": {
+    "*": [
+      51.463724,
+      -0.168997
+    ]
+  },
+  "Clapham North Station": {
+    "*": [
+      51.465135,
+      -0.130016
+    ]
+  },
+  "Clapham South Station": {
+    "*": [
+      51.452654,
+      -0.147582
+    ]
+  },
+  "Clapton Rail Station": {
+    "*": [
+      51.561644,
+      -0.057025
+    ]
+  },
+  "Cockfosters Station": {
+    "*": [
+      51.65152,
+      -0.149171
+    ]
+  },
+  "Colindale Station": {
+    "*": [
+      51.595424,
+      -0.249919
+    ]
+  },
+  "Colliers Wood Station": {
+    "*": [
+      51.41816,
+      -0.178086
+    ]
+  },
+  "Coombe Lane Tram Stop": {
+    "*": [
+      51.359791,
+      -0.05956
+    ]
+  },
+  "Covent Garden Station": {
+    "*": [
+      51.513093,
+      -0.124436
+    ]
+  },
+  "Crossharbour &amp; London Arena Station": {
+    "*": [
+      51.4956983741163,
+      -0.014614325661385942
+    ]
+  },
+  "Crossharbour DLR Station": {
+    "*": [
+      51.495728,
+      -0.014606
+    ]
+  },
+  "Crouch Hill Rail Station": {
+    "*": [
+      51.571302,
+      -0.117149
+    ]
+  },
+  "Croxley Station": {
+    "*": [
+      51.647044,
+      -0.441718
+    ]
+  },
+  "Crystal Palace": {
+    "*": [
+      51.418111,
+      -0.072605
+    ]
+  },
+  "Crystal Palace Rail Station": {
+    "*": [
+      51.418111,
+      -0.072605
+    ]
+  },
+  "Custom House": {
+    "*": [
+      51.509438,
+      0.027681
+    ]
+  },
+  "Custom House (for ExCel) DLR Station": {
+    "*": [
+      51.509716,
+      0.026699
+    ]
+  },
+  "Custom House Station": {
+    "*": [
+      51.50954381696438,
+      0.027684411363851223
+    ]
+  },
+  "Cutty Sark (for Maritime Greenwich) DLR Station": {
+    "*": [
+      51.481675,
+      -0.010802
+    ]
+  },
+  "Cutty Sark DLR Station": {
+    "*": [
+      51.481675,
+      -0.010802
+    ]
+  },
+  "Cutty Sark Station": {
+    "*": [
+      51.481694371850814,
+      -0.01085877270808698
+    ]
+  },
+  "Cyprus DLR Station": {
+    "*": [
+      51.508473,
+      0.063925
+    ]
+  },
+  "Cyprus Station": {
+    "*": [
+      51.50879193027477,
+      0.06353851971712263
+    ]
+  },
+  "Dagenham East Station": {
+    "*": [
+      51.544096,
+      0.166017
+    ]
+  },
+  "Dagenham Heathway Station": {
+    "*": [
+      51.541639,
+      0.147527
+    ]
+  },
+  "Dagenham Station": {
+    "*": [
+      51.544096,
+      0.166017
+    ]
+  },
+  "Dalston Junction Rail Station": {
+    "*": [
+      51.546116,
+      -0.075137
+    ]
+  },
+  "Dalston Kingsland Rail Station": {
+    "*": [
+      51.548148,
+      -0.075701
+    ]
+  },
+  "Debden Station": {
+    "*": [
+      51.645386,
+      0.083782
+    ]
+  },
+  "Denmark Hill Rail Station": {
+    "*": [
+      51.468203,
+      -0.089361
+    ]
+  },
+  "Deptford Bridge DLR Station": {
+    "*": [
+      51.474215,
+      -0.022438
+    ]
+  },
+  "Deptford Bridge Station": {
+    "*": [
+      51.474284721273506,
+      -0.021550621322944774
+    ]
+  },
+  "Devons Road DLR Station": {
+    "*": [
+      51.522667,
+      -0.017615
+    ]
+  },
+  "Devons Road Station": {
+    "*": [
+      51.52217508054479,
+      -0.017224616322978142
+    ]
+  },
+  "Dollis Hill Station": {
+    "*": [
+      51.551955,
+      -0.239068
+    ]
+  },
+  "Dundonald Road Tram Stop": {
+    "*": [
+      51.417555,
+      -0.207679
+    ]
+  },
+  "Ealing Broadway": {
+    "*": [
+      51.514993,
+      -0.302131
+    ]
+  },
+  "Ealing Broadway Rail Station": {
+    "*": [
+      51.514841,
+      -0.301752
+    ]
+  },
+  "Ealing Broadway Station": {
+    "*": [
+      51.51491303373916,
+      -0.3015000963691871
+    ]
+  },
+  "Ealing Common Station": {
+    "*": [
+      51.51014,
+      -0.288265
+    ]
+  },
+  "Earl's Court Station": {
+    "*": [
+      51.492063,
+      -0.193378
+    ]
+  },
+  "Earl\u2019s Court Station": {
+    "*": [
+      51.492063,
+      -0.193378
+    ]
+  },
+  "East Acton Station": {
+    "*": [
+      51.516612,
+      -0.247248
+    ]
+  },
+  "East Croydon Tram Stop": {
+    "*": [
+      51.375995,
+      -0.091172
+    ]
+  },
+  "East Finchley Station": {
+    "*": [
+      51.587131,
+      -0.165012
+    ]
+  },
+  "East Ham Station": {
+    "*": [
+      51.538948,
+      0.051186
+    ]
+  },
+  "East India DLR Station": {
+    "*": [
+      51.509359,
+      -0.002326
+    ]
+  },
+  "East India Station": {
+    "*": [
+      51.50904124910798,
+      -0.002748663563422358
+    ]
+  },
+  "East Putney Station": {
+    "*": [
+      51.459205,
+      -0.211
+    ]
+  },
+  "Eastcote Station": {
+    "*": [
+      51.576506,
+      -0.397373
+    ]
+  },
+  "Edgware Road (Bakerloo) Station": {
+    "*": [
+      51.520299,
+      -0.17015
+    ]
+  },
+  "Edgware Road (Circle Line) Station": {
+    "*": [
+      51.519858,
+      -0.167832
+    ]
+  },
+  "Edgware Road Bakerloo Station": {
+    "*": [
+      51.520183893832,
+      -0.17013507301191544
+    ]
+  },
+  "Edgware Road Circle Station": {
+    "*": [
+      51.519920474367346,
+      -0.1676661307375839
+    ]
+  },
+  "Edgware Station": {
+    "*": [
+      51.613653,
+      -0.274928
+    ]
+  },
+  "Edmonton Green Rail Station": {
+    "*": [
+      51.624929,
+      -0.061112
+    ]
+  },
+  "Elephant & Castle": {
+    "*": [
+      51.494505,
+      -0.099185
+    ]
+  },
+  "Elephant &amp; Castle": {
+    "*": [
+      51.494505,
+      -0.099185
+    ]
+  },
+  "Elephant &amp; Castle Station": {
+    "*": [
+      51.49577704727074,
+      -0.10072960388334197
+    ]
+  },
+  "Elm Park Station": {
+    "*": [
+      51.549775,
+      0.19864
+    ]
+  },
+  "Elmers End Tram Stop": {
+    "*": [
+      51.398302,
+      -0.049429
+    ]
+  },
+  "Elverson Road DLR Station": {
+    "*": [
+      51.469074,
+      -0.016728
+    ]
+  },
+  "Elverson Road Station": {
+    "*": [
+      51.46881942759032,
+      -0.017467307436164158
+    ]
+  },
+  "Embankment Station": {
+    "*": [
+      51.507058,
+      -0.122666
+    ]
+  },
+  "Emerson Park Rail Station": {
+    "*": [
+      51.568642,
+      0.220113
+    ]
+  },
+  "Enfield Town Rail Station": {
+    "*": [
+      51.652026,
+      -0.079328
+    ]
+  },
+  "Epping Station": {
+    "*": [
+      51.69368,
+      0.113767
+    ]
+  },
+  "Euston": {
+    "*": [
+      51.527365,
+      -0.132754
+    ]
+  },
+  "Euston Rail Station": {
+    "*": [
+      51.527365,
+      -0.132754
+    ]
+  },
+  "Euston Square Station": {
+    "*": [
+      51.525604,
+      -0.135829
+    ]
+  },
+  "Euston Station": {
+    "*": [
+      51.52859626089946,
+      -0.13328971879931553
+    ]
+  },
+  "Fairlop Station": {
+    "*": [
+      51.595618,
+      0.091004
+    ]
+  },
+  "Farringdon": {
+    "*": [
+      51.520214,
+      -0.105054
+    ]
+  },
+  "Farringdon Rail Station": {
+    "*": [
+      51.520189,
+      -0.104915
+    ]
+  },
+  "Farringdon Station": {
+    "*": [
+      51.52044475493079,
+      -0.10506525423688033
+    ]
+  },
+  "Fieldway Tram Stop": {
+    "*": [
+      51.351319,
+      -0.024532
+    ]
+  },
+  "Finchley Central Station": {
+    "*": [
+      51.600921,
+      -0.192527
+    ]
+  },
+  "Finchley Road & Frognal Rail Station": {
+    "*": [
+      51.550266,
+      -0.183141
+    ]
+  },
+  "Finchley Road &amp; Frognal Rail Station": {
+    "*": [
+      51.550266,
+      -0.183141
+    ]
+  },
+  "Finchley Road Station": {
+    "*": [
+      51.546825,
+      -0.179845
+    ]
+  },
+  "Finsbury Park": {
+    "*": [
+      51.564778,
+      -0.105876
+    ]
+  },
+  "Finsbury Park Station": {
+    "*": [
+      51.56440164848459,
+      -0.10651210028215848
+    ]
+  },
+  "Forest Gate Rail Station": {
+    "*": [
+      51.549432,
+      0.024353
+    ]
+  },
+  "Forest Hill Rail Station": {
+    "*": [
+      51.43928,
+      -0.053157
+    ]
+  },
+  "Fulham Broadway Station": {
+    "*": [
+      51.480081,
+      -0.195422
+    ]
+  },
+  "Gallions Reach DLR Station": {
+    "*": [
+      51.508941,
+      0.071555
+    ]
+  },
+  "Gallions Reach Station": {
+    "*": [
+      51.509538091545025,
+      0.07222003294786511
+    ]
+  },
+  "Gants Hill Station": {
+    "*": [
+      51.576544,
+      0.066185
+    ]
+  },
+  "George Street Tram Stop": {
+    "*": [
+      51.373977,
+      -0.098746
+    ]
+  },
+  "Gidea Park Rail Station": {
+    "*": [
+      51.581904,
+      0.205964
+    ]
+  },
+  "Gloucester Road Station": {
+    "*": [
+      51.494316,
+      -0.182658
+    ]
+  },
+  "Golders Green Station": {
+    "*": [
+      51.572259,
+      -0.194039
+    ]
+  },
+  "Goldhawk Road Station": {
+    "*": [
+      51.502005,
+      -0.226715
+    ]
+  },
+  "Goodge Street Station": {
+    "*": [
+      51.520599,
+      -0.134361
+    ]
+  },
+  "Goodmayes Rail Station": {
+    "*": [
+      51.565579,
+      0.110807
+    ]
+  },
+  "Gospel Oak Rail Station": {
+    "*": [
+      51.555335,
+      -0.15077
+    ]
+  },
+  "Grange Hill Station": {
+    "*": [
+      51.613378,
+      0.092066
+    ]
+  },
+  "Gravel Hill Tram Stop": {
+    "*": [
+      51.354545,
+      -0.04315
+    ]
+  },
+  "Great Portland Street Station": {
+    "*": [
+      51.52384,
+      -0.144262
+    ]
+  },
+  "Green Park Station": {
+    "*": [
+      51.506947,
+      -0.142787
+    ]
+  },
+  "Greenford": {
+    "*": [
+      51.542657,
+      -0.345789
+    ]
+  },
+  "Greenford Station": {
+    "*": [
+      51.542302026759124,
+      -0.34644414656746
+    ]
+  },
+  "Greenwich DLR Station": {
+    "*": [
+      51.478235,
+      -0.014096
+    ]
+  },
+  "Greenwich Station": {
+    "*": [
+      51.47775781635025,
+      -0.014198816568398007
+    ]
+  },
+  "Gunnersbury": {
+    "*": [
+      51.491745,
+      -0.275276
+    ]
+  },
+  "Gunnersbury Rail Station": {
+    "*": [
+      51.491745,
+      -0.275276
+    ]
+  },
+  "Gunnersbury Station": {
+    "*": [
+      51.49179310432604,
+      -0.2751750347956584
+    ]
+  },
+  "Hackney Central Rail Station": {
+    "*": [
+      51.547105,
+      -0.056058
+    ]
+  },
+  "Hackney Downs Rail Station": {
+    "*": [
+      51.548757,
+      -0.060819
+    ]
+  },
+  "Hackney Wick Rail Station": {
+    "*": [
+      51.54341,
+      -0.02492
+    ]
+  },
+  "Haggerston Rail Station": {
+    "*": [
+      51.538705,
+      -0.075666
+    ]
+  },
+  "Hainault Station": {
+    "*": [
+      51.603659,
+      0.093482
+    ]
+  },
+  "Hammersmith": {
+    "*": [
+      51.492304,
+      -0.223619
+    ]
+  },
+  "Hammersmith (D &amp; P) Station": {
+    "*": [
+      51.492569079748954,
+      -0.22240173052421416
+    ]
+  },
+  "Hammersmith (Dist&Picc Line) Station": {
+    "*": [
+      51.492569079748954,
+      -0.22240173052421416
+    ]
+  },
+  "Hammersmith (H&C Line) Station": {
+    "*": [
+      51.493497772006556,
+      -0.22493007106495347
+    ]
+  },
+  "Hammersmith Station": {
+    "*": [
+      51.493497772006556,
+      -0.22493007106495347
+    ]
+  },
+  "Hampstead Heath Rail Station": {
+    "*": [
+      51.55521,
+      -0.165705
+    ]
+  },
+  "Hampstead Station": {
+    "*": [
+      51.556239,
+      -0.177464
+    ]
+  },
+  "Hanger Lane Station": {
+    "*": [
+      51.530177,
+      -0.292704
+    ]
+  },
+  "Hanwell Rail Station": {
+    "*": [
+      51.511835,
+      -0.338583
+    ]
+  },
+  "Harlesden": {
+    "*": [
+      51.536305,
+      -0.257774
+    ]
+  },
+  "Harlesden Rail Station": {
+    "*": [
+      51.536305,
+      -0.257774
+    ]
+  },
+  "Harlesden Station": {
+    "*": [
+      51.53619291015474,
+      -0.25750275515492754
+    ]
+  },
+  "Harold Wood Rail Station": {
+    "*": [
+      51.592766,
+      0.233129
+    ]
+  },
+  "Harringay Green Lanes Rail Station": {
+    "*": [
+      51.577182,
+      -0.098144
+    ]
+  },
+  "Harrington Road Tram Stop": {
+    "*": [
+      51.399793,
+      -0.060729
+    ]
+  },
+  "Harrow & Wealdstone": {
+    "*": [
+      51.592216,
+      -0.334896
+    ]
+  },
+  "Harrow & Wealdstone Rail Station": {
+    "*": [
+      51.592216,
+      -0.334896
+    ]
+  },
+  "Harrow &amp; Wealdstone": {
+    "*": [
+      51.592216,
+      -0.334896
+    ]
+  },
+  "Harrow &amp; Wealdstone Rail Station": {
+    "*": [
+      51.592216,
+      -0.334896
+    ]
+  },
+  "Harrow &amp; Wealdstone Station": {
+    "*": [
+      51.59220882796488,
+      -0.3352311662416417
+    ]
+  },
+  "Harrow on the Hill Station": {
+    "*": [
+      51.57932886728114,
+      -0.3370159042568268
+    ]
+  },
+  "Harrow-on-the-Hill": {
+    "*": [
+      51.579197,
+      -0.337226
+    ]
+  },
+  "Hatch End Rail Station": {
+    "*": [
+      51.609417,
+      -0.368601
+    ]
+  },
+  "Hatch End Station": {
+    "*": [
+      51.6095,
+      -0.3681
+    ]
+  },
+  "Hatton Cross Station": {
+    "*": [
+      51.466747,
+      -0.423191
+    ]
+  },
+  "Hayes & Harlington Rail Station": {
+    "*": [
+      51.503096,
+      -0.420683
+    ]
+  },
+  "Hayes &amp; Harlington Rail Station": {
+    "*": [
+      51.503096,
+      -0.420683
+    ]
+  },
+  "Headstone Lane Rail Station": {
+    "*": [
+      51.602649,
+      -0.35722
+    ]
+  },
+  "Headstone Lane Station": {
+    "*": [
+      51.6024,
+      -0.3564
+    ]
+  },
+  "Heathrow Airport Terminal 4": {
+    "*": [
+      51.458837,
+      -0.446419
+    ]
+  },
+  "Heathrow Airport Terminal 5": {
+    "*": [
+      51.471569,
+      -0.489556
+    ]
+  },
+  "Heathrow Airport Terminals 1-3": {
+    "*": [
+      51.471618,
+      -0.454037
+    ]
+  },
+  "Heathrow Terminal 4 Rail Station": {
+    "*": [
+      51.458553104092005,
+      -0.4460587669779373
+    ]
+  },
+  "Heathrow Terminal 4 Station": {
+    "*": [
+      51.458553104092005,
+      -0.4460587669779373
+    ]
+  },
+  "Heathrow Terminal 5 Rail Station": {
+    "*": [
+      51.470053,
+      -0.490589
+    ]
+  },
+  "Heathrow Terminal 5 Station": {
+    "*": [
+      51.4723,
+      -0.488
+    ]
+  },
+  "Heathrow Terminals 1, 2, 3 Station": {
+    "*": [
+      51.47121921006041,
+      -0.4524391309616831
+    ]
+  },
+  "Heathrow Terminals 2 & 3": {
+    "*": [
+      51.471618,
+      -0.454037
+    ]
+  },
+  "Heathrow Terminals 2 & 3 Rail Station": {
+    "*": [
+      51.473393,
+      -0.45176
+    ]
+  },
+  "Heathrow Terminals 2 &amp; 3 Rail Station": {
+    "*": [
+      51.473393,
+      -0.45176
+    ]
+  },
+  "Heathrow Terminals 2 &amp; 3 Station": {
+    "*": [
+      51.47121921006041,
+      -0.4524391309616831
+    ]
+  },
+  "Hendon Central Station": {
+    "*": [
+      51.583301,
+      -0.226424
+    ]
+  },
+  "Heron Quays DLR Station": {
+    "*": [
+      51.503379,
+      -0.021421
+    ]
+  },
+  "Heron Quays Station": {
+    "*": [
+      51.50306791529919,
+      -0.021744064999687465
+    ]
+  },
+  "High Barnet Station": {
+    "*": [
+      51.650541,
+      -0.194298
+    ]
+  },
+  "High Street Kensington Station": {
+    "*": [
+      51.501055,
+      -0.192792
+    ]
+  },
+  "Highams Park Rail Station": {
+    "*": [
+      51.60835,
+      -0.000222
+    ]
+  },
+  "Highbury & Islington": {
+    "*": [
+      51.546269,
+      -0.103538
+    ]
+  },
+  "Highbury & Islington Rail Station": {
+    "*": [
+      51.546269,
+      -0.103538
+    ]
+  },
+  "Highbury &amp; Islington": {
+    "*": [
+      51.546269,
+      -0.103538
+    ]
+  },
+  "Highbury &amp; Islington Rail Station": {
+    "*": [
+      51.546269,
+      -0.103538
+    ]
+  },
+  "Highbury &amp; Islington Station": {
+    "*": [
+      51.54622949173787,
+      -0.1039642387849793
+    ]
+  },
+  "Highgate Station": {
+    "*": [
+      51.577532,
+      -0.145857
+    ]
+  },
+  "Hillingdon Station": {
+    "*": [
+      51.553715,
+      -0.449828
+    ]
+  },
+  "Holborn Station": {
+    "*": [
+      51.51758,
+      -0.120475
+    ]
+  },
+  "Holland Park Station": {
+    "*": [
+      51.507143,
+      -0.205679
+    ]
+  },
+  "Holloway Road Station": {
+    "*": [
+      51.552697,
+      -0.113244
+    ]
+  },
+  "Homerton Rail Station": {
+    "*": [
+      51.547012,
+      -0.04236
+    ]
+  },
+  "Honor Oak Park Rail Station": {
+    "*": [
+      51.449989,
+      -0.045505
+    ]
+  },
+  "Hornchurch Station": {
+    "*": [
+      51.554093,
+      0.219116
+    ]
+  },
+  "Hounslow Central Station": {
+    "*": [
+      51.471295,
+      -0.366578
+    ]
+  },
+  "Hounslow East Station": {
+    "*": [
+      51.473213,
+      -0.356474
+    ]
+  },
+  "Hounslow West Station": {
+    "*": [
+      51.473469,
+      -0.386544
+    ]
+  },
+  "Hoxton Rail Station": {
+    "*": [
+      51.531512,
+      -0.075681
+    ]
+  },
+  "Hyde Park Corner Station": {
+    "*": [
+      51.503035,
+      -0.152441
+    ]
+  },
+  "Ickenham Station": {
+    "*": [
+      51.56177,
+      -0.442225
+    ]
+  },
+  "Ilford Rail Station": {
+    "*": [
+      51.559118,
+      0.06968
+    ]
+  },
+  "Imperial Wharf": {
+    "*": [
+      51.47555,
+      -0.183084
+    ]
+  },
+  "Imperial Wharf Rail Station": {
+    "*": [
+      51.47555,
+      -0.183084
+    ]
+  },
+  "Island Gardens DLR Station": {
+    "*": [
+      51.487811,
+      -0.010139
+    ]
+  },
+  "Island Gardens Station": {
+    "*": [
+      51.486671636732005,
+      -0.009489509781986224
+    ]
+  },
+  "Iver Rail Station": {
+    "*": [
+      51.508503,
+      -0.506726
+    ]
+  },
+  "Kennington Station": {
+    "*": [
+      51.488337,
+      -0.105963
+    ]
+  },
+  "Kensal Green": {
+    "*": [
+      51.530545,
+      -0.22505
+    ]
+  },
+  "Kensal Green Rail Station": {
+    "*": [
+      51.530545,
+      -0.22505
+    ]
+  },
+  "Kensal Green Station": {
+    "*": [
+      51.53045766611699,
+      -0.22471696470316385
+    ]
+  },
+  "Kensal Rise Rail Station": {
+    "*": [
+      51.534554,
+      -0.219957
+    ]
+  },
+  "Kensington (Olympia)": {
+    "*": [
+      51.496156,
+      -0.210502
+    ]
+  },
+  "Kensington (Olympia) Rail Station": {
+    "*": [
+      51.496156,
+      -0.210502
+    ]
+  },
+  "Kensington (Olympia) Station": {
+    "*": [
+      51.49780916738491,
+      -0.21038252311747127
+    ]
+  },
+  "Kentish Town": {
+    "*": [
+      51.550409,
+      -0.140545
+    ]
+  },
+  "Kentish Town Station": {
+    "*": [
+      51.55030376223787,
+      -0.14046419295327214
+    ]
+  },
+  "Kentish Town West Rail Station": {
+    "*": [
+      51.546548,
+      -0.146655
+    ]
+  },
+  "Kenton": {
+    "*": [
+      51.581786,
+      -0.316946
+    ]
+  },
+  "Kenton Rail Station": {
+    "*": [
+      51.581786,
+      -0.316946
+    ]
+  },
+  "Kenton Station": {
+    "*": [
+      51.58178846260141,
+      -0.3171644058579785
+    ]
+  },
+  "Kew Gardens": {
+    "*": [
+      51.477069,
+      -0.285148
+    ]
+  },
+  "Kew Gardens Rail Station": {
+    "*": [
+      51.477069,
+      -0.285148
+    ]
+  },
+  "Kew Gardens Station": {
+    "*": [
+      51.47702993015285,
+      -0.28525232821468915
+    ]
+  },
+  "Kilburn High Road Rail Station": {
+    "*": [
+      51.537277,
+      -0.192237
+    ]
+  },
+  "Kilburn Park Station": {
+    "*": [
+      51.534979,
+      -0.194232
+    ]
+  },
+  "Kilburn Station": {
+    "*": [
+      51.547183,
+      -0.204248
+    ]
+  },
+  "King George V DLR Station": {
+    "*": [
+      51.502003,
+      0.062624
+    ]
+  },
+  "King Henry's Drive Tram Stop": {
+    "*": [
+      51.345082,
+      -0.019975
+    ]
+  },
+  "King's Cross & St Pancras International": {
+    "*": [
+      51.531683,
+      -0.123538
+    ]
+  },
+  "King's Cross &amp; St Pancras International": {
+    "*": [
+      51.531683,
+      -0.123538
+    ]
+  },
+  "King's Cross St. Pancras Station": {
+    "*": [
+      51.530397237917526,
+      -0.12385794814245299
+    ]
+  },
+  "Kingsbury Station": {
+    "*": [
+      51.584845,
+      -0.27879
+    ]
+  },
+  "Knightsbridge Station": {
+    "*": [
+      51.501669,
+      -0.160508
+    ]
+  },
+  "Ladbroke Grove Station": {
+    "*": [
+      51.517449,
+      -0.210391
+    ]
+  },
+  "Lambeth North Station": {
+    "*": [
+      51.498808,
+      -0.112315
+    ]
+  },
+  "Lancaster Gate Station": {
+    "*": [
+      51.511723,
+      -0.175494
+    ]
+  },
+  "Langdon Park DLR Station": {
+    "*": [
+      51.515172,
+      -0.01415
+    ]
+  },
+  "Langley (Berks) Rail Station": {
+    "*": [
+      51.508062,
+      -0.541756
+    ]
+  },
+  "Latimer Road Station": {
+    "*": [
+      51.513389,
+      -0.217799
+    ]
+  },
+  "Lebanon Road Tram Stop": {
+    "*": [
+      51.375201,
+      -0.085002
+    ]
+  },
+  "Leicester Square Station": {
+    "*": [
+      51.511386,
+      -0.128426
+    ]
+  },
+  "Lewisham DLR Station": {
+    "*": [
+      51.465081,
+      -0.013016
+    ]
+  },
+  "Lewisham Station": {
+    "*": [
+      51.466074537491664,
+      -0.014706587477352798
+    ]
+  },
+  "Leyton Midland Road Rail Station": {
+    "*": [
+      51.569725,
+      -0.008051
+    ]
+  },
+  "Leyton Station": {
+    "*": [
+      51.556589,
+      -0.005523
+    ]
+  },
+  "Leytonstone High Road Rail Station": {
+    "*": [
+      51.563554,
+      0.008416
+    ]
+  },
+  "Leytonstone Station": {
+    "*": [
+      51.568324,
+      0.008194
+    ]
+  },
+  "Limehouse DLR Station": {
+    "*": [
+      51.512469,
+      -0.039799
+    ]
+  },
+  "Limehouse Station": {
+    "*": [
+      51.51249851749616,
+      -0.03971257657431441
+    ]
+  },
+  "Liverpool Street": {
+    "*": [
+      51.51794,
+      -0.083162
+    ]
+  },
+  "Liverpool Street Rail Station": {
+    "*": [
+      51.51794,
+      -0.083162
+    ]
+  },
+  "Liverpool Street Station": {
+    "*": [
+      51.51735123075174,
+      -0.08296570945694384
+    ]
+  },
+  "Lloyd Park Tram Stop": {
+    "*": [
+      51.364278,
+      -0.080775
+    ]
+  },
+  "London Bridge": {
+    "*": [
+      51.505881,
+      -0.086807
+    ]
+  },
+  "London Bridge Station": {
+    "*": [
+      51.505499353249796,
+      -0.08692240419194193
+    ]
+  },
+  "London City Airport DLR Station": {
+    "*": [
+      51.503419,
+      0.048749
+    ]
+  },
+  "London Euston Rail Station": {
+    "*": [
+      51.527365,
+      -0.132754
+    ]
+  },
+  "London Fields Rail Station": {
+    "*": [
+      51.541153,
+      -0.057753
+    ]
+  },
+  "London Liverpool Street Rail Station": {
+    "*": [
+      51.51794,
+      -0.083162
+    ]
+  },
+  "London Paddington Rail Station": {
+    "*": [
+      51.515996,
+      -0.176174
+    ]
+  },
+  "Loughton Station": {
+    "*": [
+      51.641443,
+      0.055476
+    ]
+  },
+  "Maida Vale Station": {
+    "*": [
+      51.529777,
+      -0.185758
+    ]
+  },
+  "Maidenhead Rail Station": {
+    "*": [
+      51.518669,
+      -0.72266
+    ]
+  },
+  "Manor House Station": {
+    "*": [
+      51.570738,
+      -0.096118
+    ]
+  },
+  "Manor Park Rail Station": {
+    "*": [
+      51.552477,
+      0.046342
+    ]
+  },
+  "Mansion House Station": {
+    "*": [
+      51.512117,
+      -0.094009
+    ]
+  },
+  "Marble Arch Station": {
+    "*": [
+      51.513424,
+      -0.158953
+    ]
+  },
+  "Maryland Rail Station": {
+    "*": [
+      51.546081,
+      0.005815
+    ]
+  },
+  "Marylebone": {
+    "*": [
+      51.521602,
+      -0.163013
+    ]
+  },
+  "Marylebone Station": {
+    "*": [
+      51.522223341970424,
+      -0.16310448714212372
+    ]
+  },
+  "Merton Park Tram Stop": {
+    "*": [
+      51.413589,
+      -0.201219
+    ]
+  },
+  "Mile End Station": {
+    "*": [
+      51.525122,
+      -0.03364
+    ]
+  },
+  "Mill Hill East Station": {
+    "*": [
+      51.608229,
+      -0.209986
+    ]
+  },
+  "Mitcham Junction Tram Stop": {
+    "*": [
+      51.393147,
+      -0.158738
+    ]
+  },
+  "Mitcham Tram Stop": {
+    "*": [
+      51.39749,
+      -0.1709
+    ]
+  },
+  "Monument Station": {
+    "*": [
+      51.5107,
+      -0.085969
+    ]
+  },
+  "Moor Park Station": {
+    "*": [
+      51.629845,
+      -0.432454
+    ]
+  },
+  "Moorgate": {
+    "*": [
+      51.518338,
+      -0.088627
+    ]
+  },
+  "Moorgate Station": {
+    "*": [
+      51.51836724988462,
+      -0.08900631501309116
+    ]
+  },
+  "Morden Road Tram Stop": {
+    "*": [
+      51.408874,
+      -0.192834
+    ]
+  },
+  "Morden Station": {
+    "*": [
+      51.402142,
+      -0.194839
+    ]
+  },
+  "Mornington Crescent Station": {
+    "*": [
+      51.534679,
+      -0.138789
+    ]
+  },
+  "Mudchute DLR Station": {
+    "*": [
+      51.490704,
+      -0.014738
+    ]
+  },
+  "Mudchute Station": {
+    "*": [
+      51.49036417963112,
+      -0.01509121470162963
+    ]
+  },
+  "Neasden Station": {
+    "*": [
+      51.553986,
+      -0.249837
+    ]
+  },
+  "New Addington Tram Stop": {
+    "*": [
+      51.342593,
+      -0.017412
+    ]
+  },
+  "New Cross": {
+    "*": [
+      51.476347,
+      -0.032427
+    ]
+  },
+  "New Cross ELL Rail Station": {
+    "*": [
+      51.476347,
+      -0.032427
+    ]
+  },
+  "New Cross Gate": {
+    "*": [
+      51.475132,
+      -0.040399
+    ]
+  },
+  "New Cross Gate Rail Station": {
+    "*": [
+      51.475132,
+      -0.040399
+    ]
+  },
+  "New Cross Gate Station": {
+    "*": [
+      51.47533738470145,
+      -0.040299579158885705
+    ]
+  },
+  "New Cross Rail Station": {
+    "*": [
+      51.476347,
+      -0.032427
+    ]
+  },
+  "New Cross Station": {
+    "*": [
+      51.47667420245573,
+      -0.03259457075859516
+    ]
+  },
+  "Newbury Park Station": {
+    "*": [
+      51.575726,
+      0.090004
+    ]
+  },
+  "Nine Elms Station": {
+    "*": [
+      51.479912,
+      -0.128476
+    ]
+  },
+  "North Acton Station": {
+    "*": [
+      51.523524,
+      -0.259755
+    ]
+  },
+  "North Ealing Station": {
+    "*": [
+      51.517505,
+      -0.288868
+    ]
+  },
+  "North Greenwich": {
+    "*": [
+      51.500474,
+      0.004295
+    ]
+  },
+  "North Greenwich Station": {
+    "*": [
+      51.50018182399264,
+      0.003607416938325964
+    ]
+  },
+  "North Harrow Station": {
+    "*": [
+      51.584872,
+      -0.362408
+    ]
+  },
+  "North Wembley": {
+    "*": [
+      51.56258,
+      -0.303992
+    ]
+  },
+  "North Wembley Rail Station": {
+    "*": [
+      51.56258,
+      -0.303992
+    ]
+  },
+  "North Wembley Station": {
+    "*": [
+      51.562490285575436,
+      -0.3041557353826293
+    ]
+  },
+  "Northfields Station": {
+    "*": [
+      51.499319,
+      -0.314719
+    ]
+  },
+  "Northolt Station": {
+    "*": [
+      51.548236,
+      -0.368699
+    ]
+  },
+  "Northwick Park Station": {
+    "*": [
+      51.578481,
+      -0.318056
+    ]
+  },
+  "Northwood Hills Station": {
+    "*": [
+      51.600572,
+      -0.409464
+    ]
+  },
+  "Northwood Station": {
+    "*": [
+      51.611053,
+      -0.423829
+    ]
+  },
+  "Norwood Junction": {
+    "*": [
+      51.39702,
+      -0.075216
+    ]
+  },
+  "Norwood Junction Rail Station": {
+    "*": [
+      51.39702,
+      -0.075216
+    ]
+  },
+  "Notting Hill Gate Station": {
+    "*": [
+      51.509128,
+      -0.196104
+    ]
+  },
+  "Oakwood Station": {
+    "*": [
+      51.647726,
+      -0.132182
+    ]
+  },
+  "Old Street": {
+    "*": [
+      51.526065,
+      -0.088193
+    ]
+  },
+  "Old Street Station": {
+    "*": [
+      51.52560132336981,
+      -0.08754973143646254
+    ]
+  },
+  "Osterley Station": {
+    "*": [
+      51.481274,
+      -0.352224
+    ]
+  },
+  "Oval Station": {
+    "*": [
+      51.48185,
+      -0.112439
+    ]
+  },
+  "Oxford Circus Station": {
+    "*": [
+      51.515224,
+      -0.141903
+    ]
+  },
+  "Paddington": {
+    "*": [
+      51.516449,
+      -0.177107
+    ]
+  },
+  "Paddington Station": {
+    "*": [
+      51.51531041579349,
+      -0.1753900060103242
+    ]
+  },
+  "Park Royal Station": {
+    "*": [
+      51.527123,
+      -0.284341
+    ]
+  },
+  "Parsons Green Station": {
+    "*": [
+      51.475277,
+      -0.20117
+    ]
+  },
+  "Peckham Rye Rail Station": {
+    "*": [
+      51.470034,
+      -0.069414
+    ]
+  },
+  "Penge West Rail Station": {
+    "*": [
+      51.417555,
+      -0.06084
+    ]
+  },
+  "Perivale Station": {
+    "*": [
+      51.536717,
+      -0.323446
+    ]
+  },
+  "Phipps Bridge Tram Stop": {
+    "*": [
+      51.403979,
+      -0.18164
+    ]
+  },
+  "Piccadilly Circus Station": {
+    "*": [
+      51.51005,
+      -0.133798
+    ]
+  },
+  "Pimlico Station": {
+    "*": [
+      51.489097,
+      -0.133761
+    ]
+  },
+  "Pinner Station": {
+    "*": [
+      51.592901,
+      -0.381161
+    ]
+  },
+  "Plaistow Station": {
+    "*": [
+      51.531341,
+      0.017451
+    ]
+  },
+  "Pontoon Dock DLR Station": {
+    "*": [
+      51.502212,
+      0.032115
+    ]
+  },
+  "Poplar DLR Station": {
+    "*": [
+      51.507744,
+      -0.017384
+    ]
+  },
+  "Poplar Station": {
+    "*": [
+      51.50748844327703,
+      -0.01722877373686347
+    ]
+  },
+  "Preston Road Station": {
+    "*": [
+      51.571972,
+      -0.295107
+    ]
+  },
+  "Prince Regent DLR Station": {
+    "*": [
+      51.509263,
+      0.034158
+    ]
+  },
+  "Prince Regent Station": {
+    "*": [
+      51.50932066546096,
+      0.03329548451423242
+    ]
+  },
+  "Pudding Mill Lane DLR Station": {
+    "*": [
+      51.534302,
+      -0.012755
+    ]
+  },
+  "Pudding Mill Lane Station": {
+    "*": [
+      51.5344008408679,
+      -0.01317422837946622
+    ]
+  },
+  "Putney Bridge Station": {
+    "*": [
+      51.468262,
+      -0.208731
+    ]
+  },
+  "Queen's Park": {
+    "*": [
+      51.534443,
+      -0.204882
+    ]
+  },
+  "Queen's Park Rail Station": {
+    "*": [
+      51.534443,
+      -0.204882
+    ]
+  },
+  "Queen's Park Station": {
+    "*": [
+      51.534100903446934,
+      -0.2047040902342027
+    ]
+  },
+  "Queens Park (London) Rail Station": {
+    "*": [
+      51.534443,
+      -0.204882
+    ]
+  },
+  "Queens Road Peckham Rail Station": {
+    "*": [
+      51.473566,
+      -0.057313
+    ]
+  },
+  "Queensbury Station": {
+    "*": [
+      51.594188,
+      -0.286219
+    ]
+  },
+  "Queensway Station": {
+    "*": [
+      51.510312,
+      -0.187152
+    ]
+  },
+  "Ravenscourt Park Station": {
+    "*": [
+      51.494122,
+      -0.235881
+    ]
+  },
+  "Rayners Lane Station": {
+    "*": [
+      51.575147,
+      -0.371127
+    ]
+  },
+  "Reading Rail Station": {
+    "*": [
+      51.458786,
+      -0.971863
+    ]
+  },
+  "Rectory Road Rail Station": {
+    "*": [
+      51.558502,
+      -0.068267
+    ]
+  },
+  "Redbridge Station": {
+    "*": [
+      51.576243,
+      0.04536
+    ]
+  },
+  "Reeves Corner Tram Stop": {
+    "*": [
+      51.375279,
+      -0.106408
+    ]
+  },
+  "Regent's Park Station": {
+    "*": [
+      51.523344,
+      -0.146444
+    ]
+  },
+  "Richmond": {
+    "*": [
+      51.463152,
+      -0.301448
+    ]
+  },
+  "Richmond (London) Rail Station": {
+    "*": [
+      51.463152,
+      -0.301448
+    ]
+  },
+  "Richmond Rail Station": {
+    "*": [
+      51.463152,
+      -0.301448
+    ]
+  },
+  "Richmond Station": {
+    "*": [
+      51.46315964085974,
+      -0.3017542176868921
+    ]
+  },
+  "Rickmansworth": {
+    "*": [
+      51.640247,
+      -0.473273
+    ]
+  },
+  "Rickmansworth Station": {
+    "*": [
+      51.64027270698857,
+      -0.4737121070183859
+    ]
+  },
+  "Roding Valley Station": {
+    "*": [
+      51.617199,
+      0.043647
+    ]
+  },
+  "Romford Rail Station": {
+    "*": [
+      51.574829,
+      0.183237
+    ]
+  },
+  "Rotherhithe Rail Station": {
+    "*": [
+      51.500817,
+      -0.052048
+    ]
+  },
+  "Rotherhithe Station": {
+    "*": [
+      51.50100569426645,
+      -0.052180998321318894
+    ]
+  },
+  "Royal Albert DLR Station": {
+    "*": [
+      51.508357,
+      0.045935
+    ]
+  },
+  "Royal Albert Station": {
+    "*": [
+      51.50819634436704,
+      0.04621659355798654
+    ]
+  },
+  "Royal Oak Station": {
+    "*": [
+      51.519113,
+      -0.188748
+    ]
+  },
+  "Royal Victoria DLR Station": {
+    "*": [
+      51.50934,
+      0.018505
+    ]
+  },
+  "Royal Victoria Station": {
+    "*": [
+      51.509062110622175,
+      0.018078557359541534
+    ]
+  },
+  "Ruislip Gardens Station": {
+    "*": [
+      51.560736,
+      -0.41071
+    ]
+  },
+  "Ruislip Manor Station": {
+    "*": [
+      51.573202,
+      -0.412973
+    ]
+  },
+  "Ruislip Station": {
+    "*": [
+      51.571354,
+      -0.421898
+    ]
+  },
+  "Russell Square Station": {
+    "*": [
+      51.523073,
+      -0.124285
+    ]
+  },
+  "Sandilands Tram Stop": {
+    "*": [
+      51.375024,
+      -0.078041
+    ]
+  },
+  "Seven Kings Rail Station": {
+    "*": [
+      51.564026,
+      0.0971
+    ]
+  },
+  "Seven Sisters": {
+    "*": [
+      51.582931,
+      -0.073306
+    ]
+  },
+  "Seven Sisters Rail Station": {
+    "*": [
+      51.582931,
+      -0.073306
+    ]
+  },
+  "Seven Sisters Station": {
+    "*": [
+      51.58335418466474,
+      -0.0724918814949986
+    ]
+  },
+  "Shadwell DLR Station": {
+    "*": [
+      51.511492,
+      -0.056782
+    ]
+  },
+  "Shadwell Rail Station": {
+    "*": [
+      51.511492,
+      -0.056782
+    ]
+  },
+  "Shadwell Station": {
+    "*": [
+      51.51122897818464,
+      -0.056904475684454184
+    ]
+  },
+  "Shenfield Rail Station": {
+    "*": [
+      51.630877,
+      0.329851
+    ]
+  },
+  "Shepherd's Bush": {
+    "*": [
+      51.504791,
+      -0.219213
+    ]
+  },
+  "Shepherd's Bush (Central) Station": {
+    "*": [
+      51.5044,
+      -0.2188
+    ]
+  },
+  "Shepherd's Bush Market Station": {
+    "*": [
+      51.505579,
+      -0.226375
+    ]
+  },
+  "Shepherd's Bush Rail Station": {
+    "*": [
+      51.504791,
+      -0.219213
+    ]
+  },
+  "Shepherd's Bush Station": {
+    "*": [
+      51.5044,
+      -0.2188
+    ]
+  },
+  "Shepherds Bush Rail Station": {
+    "*": [
+      51.504791,
+      -0.219213
+    ]
+  },
+  "Shoreditch High Street Rail Station": {
+    "*": [
+      51.523375,
+      -0.075246
+    ]
+  },
+  "Silver Street Rail Station": {
+    "*": [
+      51.614688,
+      -0.06724
+    ]
+  },
+  "Sloane Square Station": {
+    "*": [
+      51.49227,
+      -0.156377
+    ]
+  },
+  "Slough Rail Station": {
+    "*": [
+      51.51188,
+      -0.59151
+    ]
+  },
+  "Snaresbrook Station": {
+    "*": [
+      51.580678,
+      0.02144
+    ]
+  },
+  "South Acton Rail Station": {
+    "*": [
+      51.499695,
+      -0.270157
+    ]
+  },
+  "South Ealing Station": {
+    "*": [
+      51.501003,
+      -0.307424
+    ]
+  },
+  "South Hampstead Rail Station": {
+    "*": [
+      51.541432,
+      -0.178878
+    ]
+  },
+  "South Harrow Station": {
+    "*": [
+      51.564888,
+      -0.352492
+    ]
+  },
+  "South Kensington Station": {
+    "*": [
+      51.494094,
+      -0.174138
+    ]
+  },
+  "South Kenton": {
+    "*": [
+      51.570229,
+      -0.308448
+    ]
+  },
+  "South Kenton Rail Station": {
+    "*": [
+      51.570229,
+      -0.308448
+    ]
+  },
+  "South Kenton Station": {
+    "*": [
+      51.57017168687136,
+      -0.30858867502021503
+    ]
+  },
+  "South Quay DLR Station": {
+    "*": [
+      51.50005,
+      -0.015975
+    ]
+  },
+  "South Quay Station": {
+    "*": [
+      51.50053201100865,
+      -0.019101694079593994
+    ]
+  },
+  "South Ruislip": {
+    "*": [
+      51.556893,
+      -0.399076
+    ]
+  },
+  "South Ruislip Station": {
+    "*": [
+      51.55651695797167,
+      -0.3986587571759527
+    ]
+  },
+  "South Tottenham Rail Station": {
+    "*": [
+      51.580372,
+      -0.072103
+    ]
+  },
+  "South Wimbledon Station": {
+    "*": [
+      51.415309,
+      -0.192005
+    ]
+  },
+  "South Woodford Station": {
+    "*": [
+      51.591907,
+      0.027338
+    ]
+  },
+  "Southall Rail Station": {
+    "*": [
+      51.505957,
+      -0.37861
+    ]
+  },
+  "Southbury Rail Station": {
+    "*": [
+      51.648705,
+      -0.052437
+    ]
+  },
+  "Southfields Station": {
+    "*": [
+      51.445073,
+      -0.206602
+    ]
+  },
+  "Southgate Station": {
+    "*": [
+      51.632315,
+      -0.127816
+    ]
+  },
+  "Southwark Station": {
+    "*": [
+      51.50427,
+      -0.105331
+    ]
+  },
+  "St James Street (London) Rail Station": {
+    "*": [
+      51.580981,
+      -0.032918
+    ]
+  },
+  "St. James Street (London) Rail Station": {
+    "*": [
+      51.580981,
+      -0.032918
+    ]
+  },
+  "St. James's Park Station": {
+    "*": [
+      51.499544,
+      -0.133608
+    ]
+  },
+  "St. John's Wood Station": {
+    "*": [
+      51.534521,
+      -0.173948
+    ]
+  },
+  "St. Paul's Station": {
+    "*": [
+      51.514936,
+      -0.097567
+    ]
+  },
+  "Stamford Brook Station": {
+    "*": [
+      51.494917,
+      -0.245704
+    ]
+  },
+  "Stamford Hill Rail Station": {
+    "*": [
+      51.574467,
+      -0.076682
+    ]
+  },
+  "Stanmore Station": {
+    "*": [
+      51.619839,
+      -0.303266
+    ]
+  },
+  "Star Lane DLR Station": {
+    "*": [
+      51.520786,
+      0.004156
+    ]
+  },
+  "Stepney Green Station": {
+    "*": [
+      51.521858,
+      -0.046596
+    ]
+  },
+  "Stockwell Station": {
+    "*": [
+      51.472184,
+      -0.122644
+    ]
+  },
+  "Stoke Newington Rail Station": {
+    "*": [
+      51.565233,
+      -0.072887
+    ]
+  },
+  "Stonebridge Park": {
+    "*": [
+      51.544041,
+      -0.275859
+    ]
+  },
+  "Stonebridge Park Rail Station": {
+    "*": [
+      51.544041,
+      -0.275859
+    ]
+  },
+  "Stonebridge Park Station": {
+    "*": [
+      51.54392228583471,
+      -0.27540924757983426
+    ]
+  },
+  "Stratford": {
+    "*": [
+      51.541508,
+      -0.00241
+    ]
+  },
+  "Stratford (London) Rail Station": {
+    "*": [
+      51.541895,
+      -0.003397
+    ]
+  },
+  "Stratford DLR Station": {
+    "*": [
+      51.541508,
+      -0.00241
+    ]
+  },
+  "Stratford High Street DLR Station": {
+    "*": [
+      51.538196,
+      -0.001078
+    ]
+  },
+  "Stratford International DLR Station": {
+    "*": [
+      51.545265,
+      -0.009638
+    ]
+  },
+  "Stratford Rail Station": {
+    "*": [
+      51.541508,
+      -0.00241
+    ]
+  },
+  "Stratford Station": {
+    "*": [
+      51.541309265966866,
+      -0.003195329570308264
+    ]
+  },
+  "Sudbury Hill Station": {
+    "*": [
+      51.556946,
+      -0.336435
+    ]
+  },
+  "Sudbury Town Station": {
+    "*": [
+      51.550815,
+      -0.315745
+    ]
+  },
+  "Surrey Quays Rail Station": {
+    "*": [
+      51.493196,
+      -0.047519
+    ]
+  },
+  "Surrey Quays Station": {
+    "*": [
+      51.49319345746317,
+      -0.04751493107143308
+    ]
+  },
+  "Swiss Cottage Station": {
+    "*": [
+      51.543681,
+      -0.174894
+    ]
+  },
+  "Sydenham": {
+    "*": [
+      51.427375,
+      -0.055268
+    ]
+  },
+  "Sydenham Rail Station": {
+    "*": [
+      51.427375,
+      -0.055268
+    ]
+  },
+  "Taplow Rail Station": {
+    "*": [
+      51.523562,
+      -0.68137
+    ]
+  },
+  "Temple Station": {
+    "*": [
+      51.511006,
+      -0.11426
+    ]
+  },
+  "Theobalds Grove Rail Station": {
+    "*": [
+      51.692457,
+      -0.034831
+    ]
+  },
+  "Therapia Lane Tram Stop": {
+    "*": [
+      51.385697,
+      -0.129045
+    ]
+  },
+  "Theydon Bois Station": {
+    "*": [
+      51.671759,
+      0.103085
+    ]
+  },
+  "Tooting Bec Station": {
+    "*": [
+      51.435678,
+      -0.159736
+    ]
+  },
+  "Tooting Broadway Station": {
+    "*": [
+      51.42763,
+      -0.168374
+    ]
+  },
+  "Tottenham Court Road": {
+    "*": [
+      51.515565,
+      -0.129969
+    ]
+  },
+  "Tottenham Court Road Station": {
+    "*": [
+      51.516426,
+      -0.13041
+    ]
+  },
+  "Tottenham Hale": {
+    "*": [
+      51.588315,
+      -0.06024
+    ]
+  },
+  "Tottenham Hale Station": {
+    "*": [
+      51.5880453015215,
+      -0.06028111636750495
+    ]
+  },
+  "Totteridge & Whetstone Station": {
+    "*": [
+      51.630597,
+      -0.17921
+    ]
+  },
+  "Totteridge &amp; Whetstone Station": {
+    "*": [
+      51.630597,
+      -0.17921
+    ]
+  },
+  "Tower Gateway DLR Station": {
+    "*": [
+      51.510621,
+      -0.074813
+    ]
+  },
+  "Tower Gateway Station": {
+    "*": [
+      51.51056663876308,
+      -0.07453096096556094
+    ]
+  },
+  "Tower Hill Station": {
+    "*": [
+      51.509971,
+      -0.076546
+    ]
+  },
+  "Tufnell Park Station": {
+    "*": [
+      51.556822,
+      -0.138433
+    ]
+  },
+  "Turkey Street Rail Station": {
+    "*": [
+      51.672628,
+      -0.047217
+    ]
+  },
+  "Turnham Green Station": {
+    "*": [
+      51.495148,
+      -0.254555
+    ]
+  },
+  "Turnpike Lane Station": {
+    "*": [
+      51.590272,
+      -0.102953
+    ]
+  },
+  "Twyford Rail Station": {
+    "*": [
+      51.475534,
+      -0.863293
+    ]
+  },
+  "Upminster": {
+    "*": [
+      51.558659,
+      0.250855
+    ]
+  },
+  "Upminster Bridge Station": {
+    "*": [
+      51.55856,
+      0.235809
+    ]
+  },
+  "Upminster Rail Station": {
+    "*": [
+      51.558659,
+      0.250855
+    ]
+  },
+  "Upminster Station": {
+    "*": [
+      51.55888907616999,
+      0.25108711606680095
+    ]
+  },
+  "Upney Station": {
+    "*": [
+      51.538372,
+      0.10153
+    ]
+  },
+  "Upper Holloway Rail Station": {
+    "*": [
+      51.563631,
+      -0.129513
+    ]
+  },
+  "Upton Park Station": {
+    "*": [
+      51.53534,
+      0.035263
+    ]
+  },
+  "Uxbridge Station": {
+    "*": [
+      51.546565,
+      -0.477949
+    ]
+  },
+  "Vauxhall": {
+    "*": [
+      51.485739,
+      -0.123303
+    ]
+  },
+  "Vauxhall Station": {
+    "*": [
+      51.48573337604027,
+      -0.1237489510305906
+    ]
+  },
+  "Victoria": {
+    "*": [
+      51.495812,
+      -0.143826
+    ]
+  },
+  "Victoria Station": {
+    "*": [
+      51.496342174731,
+      -0.14384485434014474
+    ]
+  },
+  "Waddon Marsh Tram Stop": {
+    "*": [
+      51.377076,
+      -0.118016
+    ]
+  },
+  "Walthamstow Central": {
+    "*": [
+      51.582948,
+      -0.019842
+    ]
+  },
+  "Walthamstow Central Rail Station": {
+    "*": [
+      51.582948,
+      -0.019842
+    ]
+  },
+  "Walthamstow Central Station": {
+    "*": [
+      51.58295470500257,
+      -0.019918639025007567
+    ]
+  },
+  "Walthamstow Queens Road Rail Station": {
+    "*": [
+      51.581503,
+      -0.023846
+    ]
+  },
+  "Wandle Park Tram Stop": {
+    "*": [
+      51.373403,
+      -0.113282
+    ]
+  },
+  "Wandsworth Road Rail Station": {
+    "*": [
+      51.470216,
+      -0.13852
+    ]
+  },
+  "Wanstead Park Rail Station": {
+    "*": [
+      51.551693,
+      0.026213
+    ]
+  },
+  "Wanstead Station": {
+    "*": [
+      51.575501,
+      0.028527
+    ]
+  },
+  "Wapping Rail Station": {
+    "*": [
+      51.504388,
+      -0.055931
+    ]
+  },
+  "Wapping Station": {
+    "*": [
+      51.504268283481814,
+      -0.05584625089664785
+    ]
+  },
+  "Warren Street Station": {
+    "*": [
+      51.524951,
+      -0.138321
+    ]
+  },
+  "Warwick Avenue Station": {
+    "*": [
+      51.523263,
+      -0.183783
+    ]
+  },
+  "Waterloo": {
+    "*": [
+      51.504269,
+      -0.113356
+    ]
+  },
+  "Waterloo Station": {
+    "*": [
+      51.50350220717368,
+      -0.11406943580765903
+    ]
+  },
+  "Watford High Street Rail Station": {
+    "*": [
+      51.652655,
+      -0.391711
+    ]
+  },
+  "Watford High Street Station": {
+    "*": [
+      51.652597,
+      -0.391812
+    ]
+  },
+  "Watford Junction": {
+    "*": [
+      51.663908,
+      -0.395928
+    ]
+  },
+  "Watford Junction Rail Station": {
+    "*": [
+      51.663908,
+      -0.395928
+    ]
+  },
+  "Watford Junction Station": {
+    "*": [
+      51.6635,
+      -0.3958
+    ]
+  },
+  "Watford Station": {
+    "*": [
+      51.657446,
+      -0.417377
+    ]
+  },
+  "Wellesley Road Tram Stop": {
+    "*": [
+      51.37537,
+      -0.097554
+    ]
+  },
+  "Wembley Central": {
+    "*": [
+      51.55232,
+      -0.296642
+    ]
+  },
+  "Wembley Central Rail Station": {
+    "*": [
+      51.55232,
+      -0.296642
+    ]
+  },
+  "Wembley Central Station": {
+    "*": [
+      51.552329965978,
+      -0.2968594453731958
+    ]
+  },
+  "Wembley Park Station": {
+    "*": [
+      51.563198,
+      -0.279262
+    ]
+  },
+  "West Acton Station": {
+    "*": [
+      51.518001,
+      -0.28098
+    ]
+  },
+  "West Brompton": {
+    "*": [
+      51.487168,
+      -0.195593
+    ]
+  },
+  "West Brompton Rail Station": {
+    "*": [
+      51.487168,
+      -0.195593
+    ]
+  },
+  "West Brompton Station": {
+    "*": [
+      51.487256950006746,
+      -0.19554083437395675
+    ]
+  },
+  "West Croydon Rail Station": {
+    "*": [
+      51.378786,
+      -0.101939
+    ]
+  },
+  "West Croydon Tram Stop": {
+    "*": [
+      51.378786,
+      -0.101939
+    ]
+  },
+  "West Drayton Rail Station": {
+    "*": [
+      51.510055,
+      -0.472234
+    ]
+  },
+  "West Ealing Rail Station": {
+    "*": [
+      51.513506,
+      -0.320133
+    ]
+  },
+  "West Finchley Station": {
+    "*": [
+      51.609426,
+      -0.188362
+    ]
+  },
+  "West Ham": {
+    "*": [
+      51.528178,
+      0.004997
+    ]
+  },
+  "West Ham DLR Station": {
+    "*": [
+      51.528178,
+      0.004997
+    ]
+  },
+  "West Ham Station": {
+    "*": [
+      51.528181772941785,
+      0.005039507096672237
+    ]
+  },
+  "West Hampstead": {
+    "*": [
+      51.547533,
+      -0.191357
+    ]
+  },
+  "West Hampstead Rail Station": {
+    "*": [
+      51.547533,
+      -0.191357
+    ]
+  },
+  "West Hampstead Station": {
+    "*": [
+      51.546701979094905,
+      -0.1907498502564343
+    ]
+  },
+  "West Harrow Station": {
+    "*": [
+      51.57971,
+      -0.3534
+    ]
+  },
+  "West India Quay DLR Station": {
+    "*": [
+      51.50703,
+      -0.020311
+    ]
+  },
+  "West India Quay Station": {
+    "*": [
+      51.50663843932786,
+      -0.0201480811370715
+    ]
+  },
+  "West Kensington Station": {
+    "*": [
+      51.490459,
+      -0.206636
+    ]
+  },
+  "West Ruislip": {
+    "*": [
+      51.569721,
+      -0.437816
+    ]
+  },
+  "West Ruislip Station": {
+    "*": [
+      51.56952886292043,
+      -0.437886436759924
+    ]
+  },
+  "West Silvertown DLR Station": {
+    "*": [
+      51.502838,
+      0.02246
+    ]
+  },
+  "Westbourne Park Station": {
+    "*": [
+      51.52111,
+      -0.201065
+    ]
+  },
+  "Westferry DLR Station": {
+    "*": [
+      51.509431,
+      -0.02675
+    ]
+  },
+  "Westferry Station": {
+    "*": [
+      51.509431782335305,
+      -0.025791956499847963
+    ]
+  },
+  "Westminster": {
+    "*": [
+      51.501603,
+      -0.125984
+    ]
+  },
+  "Westminster Station": {
+    "*": [
+      51.50108458344646,
+      -0.12481826520069893
+    ]
+  },
+  "White City Station": {
+    "*": [
+      51.511959,
+      -0.224297
+    ]
+  },
+  "White Hart Lane Rail Station": {
+    "*": [
+      51.605037,
+      -0.070914
+    ]
+  },
+  "Whitechapel": {
+    "*": [
+      51.519498,
+      -0.059858
+    ]
+  },
+  "Whitechapel Rail Station": {
+    "*": [
+      51.519498,
+      -0.059858
+    ]
+  },
+  "Whitechapel Station": {
+    "*": [
+      51.51945524689079,
+      -0.059984982962259466
+    ]
+  },
+  "Willesden Green Station": {
+    "*": [
+      51.549146,
+      -0.221537
+    ]
+  },
+  "Willesden Junction": {
+    "*": [
+      51.532556,
+      -0.243006
+    ]
+  },
+  "Willesden Junction Rail Station": {
+    "*": [
+      51.532556,
+      -0.243006
+    ]
+  },
+  "Willesden Junction Station": {
+    "*": [
+      51.53219149710364,
+      -0.2442888945170346
+    ]
+  },
+  "Wimbledon": {
+    "*": [
+      51.421505,
+      -0.206444
+    ]
+  },
+  "Wimbledon Park Station": {
+    "*": [
+      51.434573,
+      -0.199719
+    ]
+  },
+  "Wimbledon Station": {
+    "*": [
+      51.42138371953177,
+      -0.20638158690359198
+    ]
+  },
+  "Wimbledon Tram Stop": {
+    "*": [
+      51.421505,
+      -0.206444
+    ]
+  },
+  "Wood Green Station": {
+    "*": [
+      51.597479,
+      -0.109886
+    ]
+  },
+  "Wood Lane Station": {
+    "*": [
+      51.509669,
+      -0.22453
+    ]
+  },
+  "Wood Street Rail Station": {
+    "*": [
+      51.58658,
+      -0.002405
+    ]
+  },
+  "Woodford Station": {
+    "*": [
+      51.606899,
+      0.03397
+    ]
+  },
+  "Woodgrange Park Rail Station": {
+    "*": [
+      51.549264,
+      0.044423
+    ]
+  },
+  "Woodside Park Station": {
+    "*": [
+      51.618014,
+      -0.18542
+    ]
+  },
+  "Woodside Tram Stop": {
+    "*": [
+      51.3871,
+      -0.065361
+    ]
+  },
+  "Woolwich": {
+    "*": [
+      51.492168,
+      0.070593
+    ]
+  },
+  "Woolwich Arsenal DLR Station": {
+    "*": [
+      51.489962,
+      0.06917
+    ]
+  }
+}
